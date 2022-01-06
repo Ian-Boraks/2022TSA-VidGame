@@ -3,7 +3,7 @@
 html {
 	height: 100vh;
 	width: 100vw;
-  /* ! Now 1rem will always be 10px */
+	/* ! Now 1rem will always be 10px */
 	font-size: 10px;
 
 	overflow-x: hidden;
@@ -17,7 +17,7 @@ section {
 
 body {
 	height: calc(100% - 4rem);
-	margin: 2rem 0rem 2rem 0rem;
+	margin: 0rem 0rem 2rem 0rem;
 
 	font-size: 1.5rem;
 
@@ -32,122 +32,10 @@ body {
 	width: 100%;
 }
 
-#menu {
-  /* ! This is to change the height of the menu bar
-     ! Plz make this mobile response (or you can let me handle
-     ! this after you are done with the menu). */
-  height: 7rem; 
-}
-
-#map {
+#game_window {
 	position: relative;
 	width: 100%;
-  /* ! This needs to be changed with the #menu height.
-     ! 100% - #menu { height } */
-	height: calc(100% - 7rem);
+	height: calc(100%);
 	color: var(--text-color-light);
 	z-index: 1;
-}
-
-#current-markers {
-	color: var(--text-color-dark);
-	background-color: var(--background-color-light);
-	border-radius: 2rem;
-
-	position: fixed;
-	bottom: 2rem;
-	left: 0;
-
-	padding: 2rem;
-	margin: 15px 15px 15px 15px;
-	z-index: 2;
-}
-#hide-results-button {
-	content: "";
-
-	background-color: var(--background-color-light);
-	border-radius: 1rem;
-	position: absolute;
-  z-index: 3;
-
-	padding: 4rem 1rem 4rem 2rem;
-	margin: 50% -2rem 0 0;
-	transform: translateY(-50%);
-
-	top: 0;
-	right: 0;
-}
-#hide-results-button::after {
-	content: "HIDE";
-	font-family: "Courier New", Courier, monospace;
-	color: var(--text-color-dark);
-	width: fit-content;
-
-	position: absolute;
-	margin: -0.5em 0 0 -2.25rem;
-
-	transform: rotate(90deg);
-}
-#hide-results-button:hover {
-	background-color: var(--accent-color-light);
-}
-
-.resultsCollapse #hide-results-button::after,
-.resultsCollapsed #hide-results-button::after {
-	content: "EXPAND";
-  margin: -0.5em 0 0 -3.15rem;
-}
-
-.resultsExpand {
-	margin-left: 15px;
-	animation-name: resultsToggle;
-	animation-duration: 1s;
-	animation-direction: reverse;
-	animation-fill-mode: forwards;
-}
-.resultsCollapse {
-	animation-name: resultsToggle;
-	animation-duration: 1s;
-	animation-direction: normal;
-	animation-fill-mode: forwards;
-}
-.resultsCollapsed {
-	margin-left: -220px !important;
-	animation-name: resultsToggle;
-	-webkit-animation-name: none !important;
-}
-.resultsExpanded {
-	margin-left: 15px !important;
-	animation-name: resultsToggle;
-	-webkit-animation-name: none !important;
-}
-
-@keyframes resultsToggle {
-	from {
-		margin-left: 15px;
-	}
-	to {
-		margin-left: -220px;
-	}
-}
-
-#results-list {
-	position: relative;
-	width: 100%;
-
-	max-height: 18rem;
-	max-width: 18rem;
-	min-width: 4em;
-
-	padding-left: 1.25rem;
-	margin: 0 0 1em 0;
-
-	overflow-y: scroll;
-	scrollbar-width: thin;
-}
-
-#reset-zoom {
-	position: relative;
-	margin: 0 0 0 50%;
-	transform: translateX(-50%);
 }
