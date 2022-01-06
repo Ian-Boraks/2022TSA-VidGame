@@ -16,8 +16,6 @@ soundManager.onready(function () {
     id: 'trombone',
     url: '/assets/sound/FX68GWY-funny-trombone-slide-accent.mp3'
   });
-
-  // playSound('trombone');
 });
 
 // * CLASSES ----------------------------------------------------------
