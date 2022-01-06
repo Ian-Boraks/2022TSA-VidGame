@@ -1,0 +1,38 @@
+<div id="header">
+    <style scoped>
+        #header {
+            font-family: "Lucida Console";
+            font-size: 1rem;
+
+            height: 2rem;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background-color: var(--background-color-light);
+            text-align: center;
+            z-index: 999;
+        }
+
+        #header::after {
+            /* create a full-height inline block pseudo-element */
+            content: "";
+            display: inline-block;
+            vertical-align: middle;
+            /* vertical alignment of the inline element */
+            height: 100%;
+        }
+
+        #header .content {
+            display: inline-block;
+            vertical-align: middle;
+            /* vertical alignment of the inline element */
+        }
+    </style>
+    <div class="content">
+        <a href="javascript:void(0);" onclick="location.href='/index.html';">Home</a> |
+        <a href="javascript:void(0);" onclick="history.back()">Back</a> |
+        <a href="javascript:void(0);" onclick="updateMap(['hospital'])">Find Hospital</a> |
+        <a href="javascript:void(0);" onclick="updateMap(['food', 'restaurant'])">Find Food</a>
+    </div>
+</div>

@@ -1,0 +1,29 @@
+<div id="skip-to-content">
+  <style scoped>
+    .skip-to-content-link {
+      left: 50%;
+      position: absolute;
+      transform: translateY(-50%);
+      z-index: 1000;
+    }
+
+    .skip-to-content-link {
+      background: #e77e23;
+      height: 30px;
+      left: 50%;
+      padding: 8px;
+      position: absolute;
+      transform: translateY(-1000rem);
+      transform: translateX(-1000rem);
+      transition: transform 0.3s;
+    }
+
+    .skip-to-content-link:focus {
+      transform: translateY(0);
+      transform: translateX(0);
+    }
+  </style>
+  <a class="skip-to-content-link" href="#master">
+    Skip to content
+  </a>
+</div>
