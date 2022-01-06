@@ -3,6 +3,7 @@
 html {
 	height: 100vh;
 	width: 100vw;
+  
 	/* ! Now 1rem will always be 10px */
 	font-size: 10px;
 
@@ -32,7 +33,7 @@ body {
 	width: 100%;
 }
 
-#game_window {
+#game-window {
 	position: relative;
 	width: 100%;
 	height: calc(100%);
