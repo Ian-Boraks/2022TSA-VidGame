@@ -6,10 +6,16 @@ let context; // Canvas context
 let mainPlayer;
 let dynamics = [];
 let statics = [];
+let noScroll = [];
 
 var gravityEnabled = true;
 var gravity = .1;
 var touchedGround = false;
+var scrollDistance = 300;
+var scrollOffset = {
+  x: 0,
+  y: 0
+}
 
 var moveUp = false;
 var moveLeft = false;
@@ -50,7 +56,7 @@ soundManager.onready(function () {
 
 // * CLASSES ----------------------------------------------------------
 class dynamicObjRect {
-  constructor(width, height, initPosx, initPosy, color) {
+  constructor(width, height, initPosx, initPosy, color, name = null) {
     this.width = width;
     this.height = height;
     this.currentPosx = initPosx;
@@ -63,6 +69,7 @@ class dynamicObjRect {
       speed: 7
     };
     this.currentAnimation = null;
+    this.name = name;
   }
 
   draw() {
@@ -87,7 +94,7 @@ class dynamicObjRect {
 }
 
 class dynamicObjImg {
-  constructor(width, height, initPosx, initPosy, imgLink) {
+  constructor(width, height, initPosx, initPosy, imgLink, name = null) {
     this.width = width;
     this.height = height;
     this.currentPosx = initPosx;
@@ -100,6 +107,7 @@ class dynamicObjImg {
       speed: 7
     };
     this.currentAnimation = null;
+    this.name = name;
   }
 
   draw() {
@@ -118,13 +126,14 @@ class dynamicObjImg {
 }
 
 class staticObjRect {
-  constructor(width, height, initPosx, initPosy, color) {
+  constructor(width, height, initPosx, initPosy, color, name = null) {
     this.width = width;
     this.height = height;
     this.currentPosx = initPosx;
     this.currentPosy = initPosy;
     this.color = color;
     this.currentAnimation = null;
+    this.name = name;
   }
 
   draw() {
@@ -138,22 +147,39 @@ class staticObjRect {
     context.fill();
     context.closePath();
   }
+
+  move() {
+    if (scrollOffset.x == 0 && scrollOffset.y == 0) {
+      return;
+    }
+    this.currentPosx += scrollOffset.x;
+    this.currentPosy += scrollOffset.y;
+  }
 }
 
 class staticObjImg {
-  constructor(width, height, initPosx, initPosy, imgLink) {
+  constructor(width, height, initPosx, initPosy, imgLink, name = null) {
     this.width = width;
     this.height = height;
     this.currentPosx = initPosx;
     this.currentPosy = initPosy;
     this.imgLink = imgLink;
     this.currentAnimation = null;
+    this.name = name;
   }
 
   draw() {
     let image = new Image();
     image.src = this.imgLink;
     context.drawImage(image, this.currentPosx, this.currentPosy, this.width, this.height);
+  }
+
+  move() {
+    if (scrollOffset.x == 0 && scrollOffset.y == 0) {
+      return;
+    }
+    this.currentPosx += scrollOffset.x;
+    this.currentPosy += scrollOffset.y;
   }
 }
 
@@ -168,6 +194,7 @@ function frameUpdate() {
     dynamics[i].draw();
   }
   for (let i = 0; i < statics.length; i++) {
+    if (!(noScroll.indexOf(statics[i]) >= 0)) { statics[i].move(); }
     statics[i].draw();
   }
   // context.restore();
@@ -262,14 +289,28 @@ function playerMovementGravity() {
 
   lastPos = [dynamics[0].currentPosx, dynamics[0].currentPosy];
   lastMove = [dynamics[0].moveValues.x, dynamics[0].moveValues.y];
-  let colliding = collision(dynamics[0])
+  let colliding = collision(dynamics[0]);
 
-  if (colliding[0]) {
+  scrollOffset.x = scrollOffset.y = 0;
+  if (colliding.border) {
+    if (colliding.top) {
+      scrollOffset.y = (dynamics[0].moveValues.y * dynamics[0].moveValues.amount) * -1;
+    }
+    if (colliding.bottom) {
+      scrollOffset.y = (dynamics[0].moveValues.y * dynamics[0].moveValues.amount) * -1;
+    }
+    if (colliding.left) {
+      scrollOffset.x = (dynamics[0].moveValues.x * dynamics[0].moveValues.amount) * -1;
+    }
+    if (colliding.right) {
+      scrollOffset.x = (dynamics[0].moveValues.x * dynamics[0].moveValues.amount) * -1;
+    }
+  }
+  if (colliding.x) {
     dynamics[0].moveValues.x = 0;
     dynamics[0].currentPosx = lastPos[0];
   }
-  if (colliding[1]) {
-    if (!touchedGround) { playSound('trombone'); }
+  if (colliding.y) {
     touchedGround = true;
     dynamics[0].moveValues.y = 0;
     dynamics[0].currentPosy = lastPos[1];
@@ -317,14 +358,18 @@ function playerMovementNoGravity() {
     dynamics[0].moveValues.x = 0;
     dynamics[0].moveValues.y = 0;
   }
+
+  lastPos = [dynamics[0].currentPosx, dynamics[0].currentPosy];
   lastMove = [dynamics[0].moveValues.x, dynamics[0].moveValues.y];
   let colliding = collision(dynamics[0])
 
-  if (colliding[0]) {
+  if (colliding.x) {
     dynamics[0].moveValues.x = 0;
+    dynamics[0].currentPosx = lastPos[0];
   }
-  if (colliding[1]) {
+  if (colliding.y) {
     dynamics[0].moveValues.y = 0;
+    dynamics[0].currentPosy = lastPos[1];
   }
 
 }
@@ -334,7 +379,16 @@ function enemyMovement(params) {
 }
 
 var collision = function (object) {
-  let colliding = [false, false];
+  let colliding =
+  {
+    x: false,
+    y: false,
+    border: false,
+    left: false,
+    right: false,
+    top: false,
+    bottom: false
+  };
   for (let i = 0; i < statics.length; i++) {
     if (
       object.currentPosx + (object.moveValues.x * object.moveValues.amount) + object.width > statics[i].currentPosx &&
@@ -342,7 +396,9 @@ var collision = function (object) {
       object.currentPosy + object.height > statics[i].currentPosy &&
       object.currentPosy < statics[i].currentPosy + statics[i].height
     ) {
-      colliding[0] = true;
+      if (statics[i].name == 'borderWallRight') { colliding.right = colliding.border = true; }
+      if (statics[i].name == 'borderWallLeft') { colliding.left = colliding.border = true; }
+      colliding.x = true;
     }
 
     if (
@@ -351,8 +407,11 @@ var collision = function (object) {
       object.currentPosy + (object.moveValues.y * object.moveValues.amount) + object.height >= statics[i].currentPosy &&
       object.currentPosy + (object.moveValues.y * object.moveValues.amount) <= statics[i].currentPosy + statics[i].height
     ) {
-      colliding[1] = true;
+      if (statics[i].name == 'borderWallTop') { colliding.top = colliding.border = true; }
+      if (statics[i].name == 'borderWallBottom') { colliding.bottom = colliding.border = true; }
+      colliding.y = true;
     }
+
   }
   return colliding;
 }
@@ -365,19 +424,48 @@ function makePlayer() {
 
 function makeBorder() {
   console.log('makeBorder');
-  statics = statics.concat(
-    borderWallBottom = new staticObjRect(c.width, 10, 0, 0, '#92303b'),
-    borderWallTop = new staticObjRect(c.width, 10, 0, c.height - 10, '#2370db'),
-    borderWallLeft = new staticObjRect(10, c.height, 0, 0, '#0ffafb'),
-    borderWallRight = new staticObjRect(10, c.height, c.width - 10, 0, '#9370db')
-  );
+
+  let noScrollStatics = [
+    stopWallLeft = new staticObjRect(10, 10000, 0, 0, '#92d03b', 'stopWallLeft'),
+    borderWallBottom = new staticObjRect(c.width, 10, 0, 0, '#92303b', 'borderWallBottom'),
+    borderWallTop = new staticObjRect(c.width, 10, 0, c.height - 10, '#2370db', 'borderWallTop'),
+    borderWallLeft = new staticObjRect(10, c.height, 0, 0, '#0ffafb', 'borderWallLeft'),
+    borderWallRight = new staticObjRect(10, c.height, c.width - 10, 0, '#9370db', 'borderWallRight')
+  ];
+
+  statics = statics.concat(noScrollStatics);
+  noScroll = noScroll.concat(noScrollStatics);
 }
 
 function makeBox() {
   console.log('makeBox');
   statics = statics.concat(
-    box = new staticObjRect(120, 120, c.width / 2, 0, '#f370db')
+    box = new staticObjRect(120, 120, c.width / 2, 0, '#f370db'),
+    floor = new staticObjRect(1000000, 10, -50000, 20, '#92d03b', 'floor')
   );
+}
+
+function scrollFrame() {
+  if (player.x + scrollDistance > offset.x + c.width) {
+    offset.x = player.x + scrollDistance - c.width
+  }
+  if (player.x - scrollDistance < offset.x && scrollDistance < offset.x) {
+    offset.x = player.x - scrollDistance
+  }
+  if (player.y - scrollDistance - player.height < offset.y && c.height - scrollDistance < offset.y) {
+    offset.y = player.y - scrollDistance - player.height * 2;
+  }
+  if (c.height - scrollDistance < offset.y) {
+    offset.y = c.height - scrollDistance
+  }
+  if (player.y + scrollDistance > offset.y + c.height) {
+    offset.y = player.y + scrollDistance - c.height
+  }
+}
+
+function playSound(sound) {
+  // ? Modified from: https://stackoverflow.com/questions/9419263/how-to-play-audio
+  soundManager.play(sound);
 }
 
 window.testScript = function () {
@@ -386,11 +474,4 @@ window.testScript = function () {
   makeBorder();
   makeBox();
   updateInterval = setInterval(frameUpdate, 16);
-}
-
-
-
-// ? Modified from: https://stackoverflow.com/questions/9419263/how-to-play-audio
-function playSound(sound) {
-  soundManager.play(sound);
 }
