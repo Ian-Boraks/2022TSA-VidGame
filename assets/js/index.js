@@ -1,36 +1,37 @@
-// ! Feel free to remove any of these and add your own functions
-
-let c; // Canvas
+let canvas; // Canvas
 let context; // Canvas context
 
-let mainPlayer;
 let dynamics = [];
 let statics = [];
 let noScroll = [];
 
-var gravityEnabled = true;
-var gravity = .1;
-var touchedGround = false;
-var scrollDistance = 300;
-var scrollOffset = {
-  x: 0,
-  y: 0
+var config = {
+  gravityEnabled: true,
+  gravity: .1,
+  jumpHeight: 2,
+  defaultPlayerSpeed: 7,
+  scrollDistance: 300,
+  scrollOffset: {
+    x: 0,
+    y: 0
+  }
 }
 
 var moveUp = false;
 var moveLeft = false;
 var moveDown = false;
 var moveRight = false;
+var touchedGround = false;
 var lastMove = [];
 
 
 // * ON LOAD --------------------------------------------------------
-c = document.getElementById("game-canvas");
-c.width = window.innerWidth;
-c.height = window.innerHeight;
+canvas = document.getElementById("game-canvas");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-context = c.getContext("2d");
-context.translate(0, c.height);
+context = canvas.getContext("2d");
+context.translate(0, canvas.height);
 context.scale(1, -1);
 
 window.addEventListener('DOMContentLoaded', function () {
@@ -97,6 +98,8 @@ class dynamicObjImg {
   constructor(width, height, initPosx, initPosy, imgLink, name = null) {
     this.width = width;
     this.height = height;
+    this.initHeight = height;
+    this.initWidth = width;
     this.currentPosx = initPosx;
     this.currentPosy = initPosy;
     this.imgLink = imgLink;
@@ -104,7 +107,7 @@ class dynamicObjImg {
       x: 0,
       y: 0,
       amount: 0,
-      speed: 7
+      speed: config.defaultPlayerSpeed
     };
     this.currentAnimation = null;
     this.name = name;
@@ -149,11 +152,11 @@ class staticObjRect {
   }
 
   move() {
-    if (scrollOffset.x == 0 && scrollOffset.y == 0) {
+    if (config.scrollOffset.x == 0 && config.scrollOffset.y == 0) {
       return;
     }
-    this.currentPosx += scrollOffset.x;
-    this.currentPosy += scrollOffset.y;
+    this.currentPosx += config.scrollOffset.x;
+    this.currentPosy += config.scrollOffset.y;
   }
 }
 
@@ -175,20 +178,22 @@ class staticObjImg {
   }
 
   move() {
-    if (scrollOffset.x == 0 && scrollOffset.y == 0) {
+    if (config.scrollOffset.x == 0 && config.scrollOffset.y == 0) {
       return;
     }
-    this.currentPosx += scrollOffset.x;
-    this.currentPosy += scrollOffset.y;
+    this.currentPosx += config.scrollOffset.x;
+    this.currentPosy += config.scrollOffset.y;
   }
 }
 
 // * FUNCTIONS --------------------------------------------------------
+function noop() { /* No operation function */ }
+
 function frameUpdate() {
   // context.save();
   // context.translate(dynamics[0].currentPosx - c.width / 2, dynamics[0].currentPosy - c.height / 2);
-  context.clearRect(0, 0, c.width, c.height);
-  if (gravityEnabled) { playerMovementGravity(); } else { playerMovementNoGravity(); }
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  if (config.gravityEnabled) { playerMovementGravity(); } else { playerMovementNoGravity(); }
   for (let i = 0; i < dynamics.length; i++) {
     dynamics[i].move();
     dynamics[i].draw();
@@ -248,7 +253,13 @@ function playerMovementGravity() {
   dynamics[0].moveValues.amount = dynamics[0].moveValues.speed;
 
   if (dynamics[0].moveValues.y > -2) {
-    dynamics[0].moveValues.y -= gravity;
+    dynamics[0].moveValues.y -= config.gravity;
+  }
+
+  if (moveDown) {
+    dynamics[0].height = dynamics[0].initHeight / 2;
+  } else {
+    dynamics[0].height = dynamics[0].initHeight;
   }
 
   if (moveLeft && moveRight) {
@@ -268,42 +279,43 @@ function playerMovementGravity() {
   }
 
   if (touchedGround) {
-    //   TODO: Wall Jumps
-    // if ((moveUp != moveRight) && (moveUp != moveLeft)) {
-    //   if (moveRight && moveUp) {
-    //     dynamics[0].moveValues.x = 1 / Math.sqrt(2);
-    //     dynamics[0].moveValues.y = -1 / Math.sqrt(2);
-    //   } else {
-    //     dynamics[0].moveValues.x = 1 / Math.sqrt(2);
-    //     dynamics[0].moveValues.y = 1 / Math.sqrt(2);
-    //   }
-    // } else if (moveUp) {
-    //   touchedGround = false;
-    //   dynamics[0].moveValues.y = 1;
-    // }
+    // TODO: Wall Jumps
+    // FIXME: Can jump into the top of statics and get stuck
     if (moveUp) {
       touchedGround = false;
-      dynamics[0].moveValues.y = 2;
+      dynamics[0].moveValues.y = config.jumpHeight;
     }
   }
 
+  if (detectCollision(dynamics[0]).head) {
+    dynamics[0].height = dynamics[0].initHeight / 2;
+  }
+
+  let colliding = detectCollision(dynamics[0]);
+
   lastPos = [dynamics[0].currentPosx, dynamics[0].currentPosy];
   lastMove = [dynamics[0].moveValues.x, dynamics[0].moveValues.y];
-  let colliding = collision(dynamics[0]);
 
-  scrollOffset.x = scrollOffset.y = 0;
+
+  config.scrollOffset.x = config.scrollOffset.y = 0;
   if (colliding.border) {
-    if (colliding.top) {
-      scrollOffset.y = (dynamics[0].moveValues.y * dynamics[0].moveValues.amount) * -1;
-    }
-    if (colliding.bottom) {
-      scrollOffset.y = (dynamics[0].moveValues.y * dynamics[0].moveValues.amount) * -1;
-    }
+    // TODO: Make bottom/top scrolling work
+    // if (colliding.top) {
+    //   scrollOffset.y = (dynamics[0].moveValues.y * dynamics[0].moveValues.amount) * -1;
+    //   // dynamics[0].moveValues.y = -.01;
+    // }
+    // if (colliding.bottom) {
+
+    //   scrollOffset.y = (dynamics[0].moveValues.y * dynamics[0].moveValues.amount) * -1;
+    //   // dynamics[0].moveValues.y = .01;
+    // }
     if (colliding.left) {
-      scrollOffset.x = (dynamics[0].moveValues.x * dynamics[0].moveValues.amount) * -1;
+      config.scrollOffset.x = (dynamics[0].moveValues.x * dynamics[0].moveValues.amount) * -1;
+      // dynamics[0].moveValues.x = .01;
     }
     if (colliding.right) {
-      scrollOffset.x = (dynamics[0].moveValues.x * dynamics[0].moveValues.amount) * -1;
+      config.scrollOffset.x = (dynamics[0].moveValues.x * dynamics[0].moveValues.amount) * -1;
+      // dynamics[0].moveValues.x = -.01;
     }
   }
   if (colliding.x) {
@@ -311,9 +323,16 @@ function playerMovementGravity() {
     dynamics[0].currentPosx = lastPos[0];
   }
   if (colliding.y) {
-    touchedGround = true;
+    touchedGround = colliding.head ? false : true;
     dynamics[0].moveValues.y = 0;
     dynamics[0].currentPosy = lastPos[1];
+  }
+  if (colliding.stopWall) {
+    dynamics[0].moveValues.x = -1 * lastMove[0];
+    setTimeout(() => { // This makes it so the user is not "bounced" off a stop wall
+      dynamics[0].moveValues.x = 0;
+      dynamics[0].moveValues.amount = 0;
+    }, 0);
   }
 }
 
@@ -361,13 +380,13 @@ function playerMovementNoGravity() {
 
   lastPos = [dynamics[0].currentPosx, dynamics[0].currentPosy];
   lastMove = [dynamics[0].moveValues.x, dynamics[0].moveValues.y];
-  let colliding = collision(dynamics[0])
+  let colliding = detectCollision(dynamics[0])
 
   if (colliding.x) {
     dynamics[0].moveValues.x = 0;
     dynamics[0].currentPosx = lastPos[0];
   }
-  if (colliding.y) {
+  if (colliding.feet) {
     dynamics[0].moveValues.y = 0;
     dynamics[0].currentPosy = lastPos[1];
   }
@@ -378,17 +397,23 @@ function enemyMovement(params) {
 
 }
 
-var collision = function (object) {
-  let colliding =
+var detectCollision = function (object) {
+  let collision =
   {
     x: false,
     y: false,
+    feet: false,
+    head: false,
     border: false,
+    borderX: false,
+    borderY: false,
+    stopWall: false,
     left: false,
     right: false,
     top: false,
     bottom: false
   };
+
   for (let i = 0; i < statics.length; i++) {
     if (
       object.currentPosx + (object.moveValues.x * object.moveValues.amount) + object.width > statics[i].currentPosx &&
@@ -396,70 +421,94 @@ var collision = function (object) {
       object.currentPosy + object.height > statics[i].currentPosy &&
       object.currentPosy < statics[i].currentPosy + statics[i].height
     ) {
-      if (statics[i].name == 'borderWallRight') { colliding.right = colliding.border = true; }
-      if (statics[i].name == 'borderWallLeft') { colliding.left = colliding.border = true; }
-      colliding.x = true;
+      if (statics[i].name == 'stopWall') { collision.stopWall = true; }
+      if (statics[i].name == 'borderWallRight') { collision.right = collision.border = true; }
+      if (statics[i].name == 'borderWallLeft') { collision.left = collision.border = true; }
+      collision.x = true;
+    }
+
+    if (
+      object.currentPosx + object.width > statics[i].currentPosx &&
+      object.currentPosx < statics[i].currentPosx + statics[i].width &&
+      object.currentPosy + (object.moveValues.y * object.moveValues.amount) + object.height / 2 >= statics[i].currentPosy &&
+      object.currentPosy + (object.moveValues.y * object.moveValues.amount) <= statics[i].currentPosy + statics[i].height
+    ) {
+      if (statics[i].name == 'stopWall') { collision.stopWall = true; }
+      if (statics[i].name == 'borderWallTop') { collision.top = collision.border = true; }
+      if (statics[i].name == 'borderWallBottom') { collision.bottom = collision.border = true; }
+      collision.feet = true;
     }
 
     if (
       object.currentPosx + object.width > statics[i].currentPosx &&
       object.currentPosx < statics[i].currentPosx + statics[i].width &&
       object.currentPosy + (object.moveValues.y * object.moveValues.amount) + object.height >= statics[i].currentPosy &&
-      object.currentPosy + (object.moveValues.y * object.moveValues.amount) <= statics[i].currentPosy + statics[i].height
+      object.currentPosy + (object.moveValues.y * object.moveValues.amount) + (object.height / 2) <= statics[i].currentPosy + statics[i].height
     ) {
-      if (statics[i].name == 'borderWallTop') { colliding.top = colliding.border = true; }
-      if (statics[i].name == 'borderWallBottom') { colliding.bottom = colliding.border = true; }
-      colliding.y = true;
+      collision.head = true;
     }
-
   }
-  return colliding;
+  collision.y = collision.feet || collision.head;
+  collision.borderX = collision.left || collision.right;
+  collision.borderY = collision.top || collision.bottom;
+  return collision;
 }
 
-function makePlayer() {
+makePlayer = function () {
   console.log('makePlayer');
-  mainPlayer = new dynamicObjImg(62 * 2, 104 * 2, c.width / 2, c.height / 2, '/assets/img/fort.png');
-  dynamics.push(mainPlayer);
+  dynamics.push(
+    new dynamicObjImg(62 * 2, 104 * 2, canvas.width / 2, canvas.height / 2, '/assets/img/fort.png')
+  );
+  makePlayer = noop();
 }
 
-function makeBorder() {
+makeBorder = function () {
   console.log('makeBorder');
 
+  let borderThickness = 40;
+  let borderColor = 'rgba(0, 0, 0, 0)';
+  // let borderColor = '#9370db';
+
   let noScrollStatics = [
-    stopWallLeft = new staticObjRect(10, 10000, 0, 0, '#92d03b', 'stopWallLeft'),
-    borderWallBottom = new staticObjRect(c.width, 10, 0, 0, '#92303b', 'borderWallBottom'),
-    borderWallTop = new staticObjRect(c.width, 10, 0, c.height - 10, '#2370db', 'borderWallTop'),
-    borderWallLeft = new staticObjRect(10, c.height, 0, 0, '#0ffafb', 'borderWallLeft'),
-    borderWallRight = new staticObjRect(10, c.height, c.width - 10, 0, '#9370db', 'borderWallRight')
+    new staticObjRect(canvas.width, borderThickness, 0, 0, borderColor, 'borderWallBottom'),
+    new staticObjRect(canvas.width, borderThickness, 0, canvas.height - borderThickness, borderColor, 'borderWallTop'),
+    new staticObjRect(borderThickness, canvas.height, 0, 0, borderColor, 'borderWallLeft'),
+    new staticObjRect(borderThickness, canvas.height, canvas.width - borderThickness, 0, borderColor, 'borderWallRight')
   ];
 
   statics = statics.concat(noScrollStatics);
   noScroll = noScroll.concat(noScrollStatics);
+  makeBorder = noop();
 }
 
-function makeBox() {
+makeStatics = function () {
   console.log('makeBox');
   statics = statics.concat(
-    box = new staticObjRect(120, 120, c.width / 2, 0, '#f370db'),
-    floor = new staticObjRect(1000000, 10, -50000, 20, '#92d03b', 'floor')
+    new staticObjRect(120, 120, 600, 0, '#f370db'),
+    new staticObjRect(120, 20, 800, 120, '#f370db'),
+    new staticObjRect(120, 20, 1000, 220, '#f370db'),
+    new staticObjRect(120, 20, 1400, 120, '#f370db'),
+    new staticObjRect(1000000, 40, 0, 0, '#92d03b', 'floor'),
+    new staticObjRect(120, 10000, -80, 0, '#92d03b', 'stopWall')
   );
+  makeStatics = noop();
 }
 
 function scrollFrame() {
-  if (player.x + scrollDistance > offset.x + c.width) {
-    offset.x = player.x + scrollDistance - c.width
+  if (player.x + config.scrollDistance > offset.x + canvas.width) {
+    offset.x = player.x + config.scrollDistance - canvas.width
   }
-  if (player.x - scrollDistance < offset.x && scrollDistance < offset.x) {
-    offset.x = player.x - scrollDistance
+  if (player.x - config.scrollDistance < offset.x && config.scrollDistance < offset.x) {
+    offset.x = player.x - config.scrollDistance
   }
-  if (player.y - scrollDistance - player.height < offset.y && c.height - scrollDistance < offset.y) {
-    offset.y = player.y - scrollDistance - player.height * 2;
+  if (player.y - config.scrollDistance - player.height < offset.y && canvas.height - config.scrollDistance < offset.y) {
+    offset.y = player.y - config.scrollDistance - player.height * 2;
   }
-  if (c.height - scrollDistance < offset.y) {
-    offset.y = c.height - scrollDistance
+  if (canvas.height - config.scrollDistance < offset.y) {
+    offset.y = canvas.height - config.scrollDistance
   }
-  if (player.y + scrollDistance > offset.y + c.height) {
-    offset.y = player.y + scrollDistance - c.height
+  if (player.y + config.scrollDistance > offset.y + canvas.height) {
+    offset.y = player.y + config.scrollDistance - canvas.height
   }
 }
 
@@ -472,6 +521,6 @@ window.testScript = function () {
   console.log('test');
   makePlayer();
   makeBorder();
-  makeBox();
+  makeStatics();
   updateInterval = setInterval(frameUpdate, 16);
 }
