@@ -34,6 +34,7 @@ window.addEventListener('DOMContentLoaded', function () {
   // gameWindow.addEventListener('click', function () {
   //   playSound('trombone');
   // });
+  testScript();
 });
 
 window.addEventListener("keydown", onKeyDown, false);
@@ -185,7 +186,7 @@ function onKeyDown(event) {
       break;
     case 13: //enter
       keyEnter = true;
-      testScript();
+      // testScript();
       break;
   }
 }
