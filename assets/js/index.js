@@ -1,7 +1,7 @@
 // ! Feel free to remove any of these and add your own functions
 
 let c; // Canvas
-let ctx; // Canvas context
+let context; // Canvas context
 
 let mainPlayer;
 let dynamics = [];
@@ -23,9 +23,9 @@ c = document.getElementById("game-canvas");
 c.width = window.innerWidth;
 c.height = window.innerHeight;
 
-ctx = c.getContext("2d");
-ctx.translate(0, c.height);
-ctx.scale(1, -1);
+context = c.getContext("2d");
+context.translate(0, c.height);
+context.scale(1, -1);
 
 window.addEventListener('DOMContentLoaded', function () {
   // ! This is an example of how to use the sound function
@@ -66,15 +66,15 @@ class dynamicObjRect {
   }
 
   draw() {
-    ctx.beginPath();
-    ctx.rect(
+    context.beginPath();
+    context.rect(
       this.currentPosx,
       this.currentPosy,
       this.width,
       this.height);
-    ctx.fillStyle = this.color;
-    ctx.fill();
-    ctx.closePath();
+    context.fillStyle = this.color;
+    context.fill();
+    context.closePath();
   }
 
   move() {
@@ -105,7 +105,7 @@ class dynamicObjImg {
   draw() {
     let image = new Image();
     image.src = this.imgLink;
-    ctx.drawImage(image, this.currentPosx, this.currentPosy, this.width, this.height);
+    context.drawImage(image, this.currentPosx, this.currentPosy, this.width, this.height);
   }
 
   move() {
@@ -128,15 +128,15 @@ class staticObjRect {
   }
 
   draw() {
-    ctx.beginPath();
-    ctx.rect(
+    context.beginPath();
+    context.rect(
       this.currentPosx,
       this.currentPosy,
       this.width,
       this.height);
-    ctx.fillStyle = this.color;
-    ctx.fill();
-    ctx.closePath();
+    context.fillStyle = this.color;
+    context.fill();
+    context.closePath();
   }
 }
 
@@ -153,12 +153,15 @@ class staticObjImg {
   draw() {
     let image = new Image();
     image.src = this.imgLink;
-    ctx.drawImage(image, this.currentPosx, this.currentPosy, this.width, this.height);
+    context.drawImage(image, this.currentPosx, this.currentPosy, this.width, this.height);
   }
 }
+
 // * FUNCTIONS --------------------------------------------------------
 function frameUpdate() {
-  ctx.clearRect(0, 0, c.width, c.height);
+  // context.save();
+  // context.translate(dynamics[0].currentPosx - c.width / 2, dynamics[0].currentPosy - c.height / 2);
+  context.clearRect(0, 0, c.width, c.height);
   if (gravityEnabled) { playerMovementGravity(); } else { playerMovementNoGravity(); }
   for (let i = 0; i < dynamics.length; i++) {
     dynamics[i].move();
@@ -167,6 +170,7 @@ function frameUpdate() {
   for (let i = 0; i < statics.length; i++) {
     statics[i].draw();
   }
+  // context.restore();
 }
 
 function onKeyDown(event) {
@@ -226,8 +230,14 @@ function playerMovementGravity() {
     dynamics[0].moveValues.x = -1;
   } else if (moveRight) {
     dynamics[0].moveValues.x = 1;
-  } else {
-    dynamics[0].moveValues.x = 0;
+  } else if (touchedGround) {
+    if (dynamics[0].moveValues.x > .1) {
+      dynamics[0].moveValues.x -= .15;
+    } else if (dynamics[0].moveValues.x < -.1) {
+      dynamics[0].moveValues.x += .15;
+    } else {
+      dynamics[0].moveValues.x = 0;
+    }
   }
 
   if (touchedGround) {
