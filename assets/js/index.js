@@ -1,17 +1,23 @@
-let dynamics = [];
-let statics = [];
-let noScroll = [];
+let objects = {
+  player: null,
+  solids: [],
+  ladders: [],
+  slopes: [],
+  frozen: [],
+  nonFrozen: [],
+};
 
-let config = {
+const config = {
   gravityEnabled: true,
   gravity: .1,
   jumpHeight: 2,
   defaultPlayerSpeed: 7,
   scrollDistance: 300,
-  scrollOffset: {
-    x: 0,
-    y: 0
-  }
+}
+
+let scrollOffset = {
+  x: 0,
+  y: 0
 }
 
 let [moveUp, moveLeft, moveDown, moveRight] = [false, false, false, false];
@@ -50,155 +56,83 @@ soundManager.onready(function () {
 });
 
 // * CLASSES ----------------------------------------------------------
-class dynamicObjRect {
-  constructor(width, height, initPosx, initPosy, color, name = null) {
-    this.width = width;
-    this.height = height;
-    this.currentPosx = initPosx;
-    this.currentPosy = initPosy;
-    this.color = color;
-    this.moveValues = {
-      x: 0,
-      y: 0,
-      amount: 0,
-      speed: 7
-    };
-    this.currentAnimation = null;
-    this.name = name;
+class entity {
+  constructor(width, height, initPosx, initPosy, styles = ['draw', '#ff2f34'], types = ['solid']) {
+    this.width = width; this.height = height;
+    this.initWidth = width; this.initHeight = height;
+    this.posx = initPosx; this.posy = initPosy;
+    this.style = styles[0];
+    this.types = types;
+    this.mainType = types[0];
+    this.moveValues = { x: 0, y: 0, amount: 0, speed: 7 };
+
+    switch (styles[0]) {
+      case 'img':
+        this.imgLink = styles[1];
+        this.img = new Image();
+        this.img.src = this.imgLink;
+        break;
+      case 'draw':
+        this.color = styles[1];
+        break;
+      default:
+        console.log('Error: entity style not found (setup)');
+        break;
+    }
+
+    if (types.indexOf('player') > -1) {
+      objects.player = this;
+      this.lastPos = [undefined, undefined];
+      this.lastMove = [undefined, undefined];
+    }
+    if (types.indexOf('solid') > -1) { objects.solids.push(this); }
+    if (types.indexOf('ladder') > -1) { objects.ladders.push(this); }
+    if (types.indexOf('frozen') > -1) { objects.frozen.push(this); } else { objects.nonFrozen.push(this); }
+    if (types.indexOf('slope') > -1) { objects.slopes.push(this); }
+
+    this.draw();
   }
 
   draw() {
-    context.beginPath();
-    context.rect(
-      this.currentPosx,
-      this.currentPosy,
-      this.width,
-      this.height);
-    context.fillStyle = this.color;
-    context.fill();
-    context.closePath();
+    switch (this.style) {
+      case 'img':
+        context.drawImage(this.img, this.posx, this.posy, this.width, this.height);
+        break;
+      case 'draw':
+        context.beginPath();
+        context.rect(this.posx, this.posy, this.width, this.height);
+        context.fillStyle = this.color;
+        context.fill();
+        context.closePath();
+        break;
+      default:
+        console.log('Error: entity style not found (draw)');
+        break;
+    }
   }
 
   move() {
-    if (this.moveValues[1] == 0) {
-      return;
+    switch (this == objects.player) {
+      case true:
+        if (this.moveValues.amount == 0) { return; }
+        this.lastPos = [this.posx, this.posy];
+        this.lastMove = [this.moveValues.x, this.moveValues.y];
+        this.posx += this.moveValues.x * this.moveValues.amount;
+        this.posy += this.moveValues.y * this.moveValues.amount;
+        break;
+      case false:
+        if (scrollOffset.x == 0 && scrollOffset.y == 0) { return; }
+        this.posx += scrollOffset.x;
+        this.posy += scrollOffset.y;
+        break;
+      default:
+        console.log('Error: entity type not found');
+        break;
     }
-    this.currentPosx += this.moveValues.x * this.moveValues.amount;
-    this.currentPosy += this.moveValues.y * this.moveValues.amount;
   }
 }
 
-class dynamicObjImg {
-  constructor(width, height, initPosx, initPosy, imgLink, name = null) {
-    this.width = width;
-    this.height = height;
-    this.initHeight = height;
-    this.initWidth = width;
-    this.currentPosx = initPosx;
-    this.currentPosy = initPosy;
-    this.imgLink = imgLink;
-    this.moveValues = {
-      x: 0,
-      y: 0,
-      amount: 0,
-      speed: config.defaultPlayerSpeed
-    };
-    this.currentAnimation = null;
-    this.name = name;
-  }
-
-  draw() {
-    let image = new Image();
-    image.src = this.imgLink;
-    context.drawImage(image, this.currentPosx, this.currentPosy, this.width, this.height);
-  }
-
-  move() {
-    if (this.moveValues[1] == 0) {
-      return;
-    }
-    this.currentPosx += this.moveValues.x * this.moveValues.amount;
-    this.currentPosy += this.moveValues.y * this.moveValues.amount;
-  }
-}
-
-class staticObjRect {
-  constructor(width, height, initPosx, initPosy, color, name = null) {
-    this.width = width;
-    this.height = height;
-    this.currentPosx = initPosx;
-    this.currentPosy = initPosy;
-    this.color = color;
-    this.currentAnimation = null;
-    this.name = name;
-  }
-
-  draw() {
-    context.beginPath();
-    context.rect(
-      this.currentPosx,
-      this.currentPosy,
-      this.width,
-      this.height);
-    context.fillStyle = this.color;
-    context.fill();
-    context.closePath();
-  }
-
-  move() {
-    if (config.scrollOffset.x == 0 && config.scrollOffset.y == 0) {
-      return;
-    }
-    this.currentPosx += config.scrollOffset.x;
-    this.currentPosy += config.scrollOffset.y;
-  }
-}
-
-class staticObjImg {
-  constructor(width, height, initPosx, initPosy, imgLink, name = null) {
-    this.width = width;
-    this.height = height;
-    this.currentPosx = initPosx;
-    this.currentPosy = initPosy;
-    this.imgLink = imgLink;
-    this.currentAnimation = null;
-    this.name = name;
-  }
-
-  draw() {
-    let image = new Image();
-    image.src = this.imgLink;
-    context.drawImage(image, this.currentPosx, this.currentPosy, this.width, this.height);
-  }
-
-  move() {
-    if (config.scrollOffset.x == 0 && config.scrollOffset.y == 0) {
-      return;
-    }
-    this.currentPosx += config.scrollOffset.x;
-    this.currentPosy += config.scrollOffset.y;
-  }
-}
-
-// * FUNCTIONS --------------------------------------------------------
-function noop() { /* No operation function */ }
-
-function frameUpdate() {
-  // context.save();
-  // context.translate(dynamics[0].currentPosx - c.width / 2, dynamics[0].currentPosy - c.height / 2);
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  if (config.gravityEnabled) { playerMovementGravity(); } else { playerMovementNoGravity(); }
-  for (let i = 0; i < dynamics.length; i++) {
-    dynamics[i].move();
-    dynamics[i].draw();
-  }
-  for (let i = 0; i < statics.length; i++) {
-    if (!(noScroll.indexOf(statics[i]) >= 0)) { statics[i].move(); }
-    statics[i].draw();
-  }
-  // context.restore();
-}
-
+// * KEYBOARD CONTROLS ------------------------------------------------
 function onKeyDown(event) {
   let keyCode = event.keyCode;
   switch (keyCode) {
@@ -243,216 +177,228 @@ function onKeyUp(event) {
   }
 }
 
-function playerMovementGravity() {
-  dynamics[0].moveValues.amount = dynamics[0].moveValues.speed;
+// * FUNCTIONS --------------------------------------------------------
+function noop() { /* No operation function */ }
 
-  if (dynamics[0].moveValues.y > -2) {
-    dynamics[0].moveValues.y -= config.gravity;
+function frameUpdate() {
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  if (config.gravityEnabled) { playerMovementGravity(); } else { playerMovementNoGravity(); }
+  for (let i = 0; i < objects.nonFrozen.length; i++) {
+    objects.nonFrozen[i].move();
+    objects.nonFrozen[i].draw();
+  }
+  for (let i = 0; i < objects.frozen.length; i++) {
+    objects.frozen[i].draw();
+  }
+}
+
+function playerMovementGravity() {
+  objects.player.moveValues.amount = objects.player.moveValues.speed;
+
+  if (objects.player.moveValues.y > -2) {
+    objects.player.moveValues.y -= config.gravity;
   }
 
   if (moveDown) {
-    dynamics[0].height = dynamics[0].initHeight / 2;
+    objects.player.height = objects.player.initHeight / 2;
   } else {
-    dynamics[0].height = dynamics[0].initHeight;
+    objects.player.height = objects.player.initHeight;
   }
 
   if (moveLeft && moveRight) {
-    dynamics[0].moveValues.x = 0;
+    objects.player.moveValues.x = 0;
   } else if (moveLeft) {
-    dynamics[0].moveValues.x = -1;
+    objects.player.moveValues.x = -1;
   } else if (moveRight) {
-    dynamics[0].moveValues.x = 1;
+    objects.player.moveValues.x = 1;
   } else if (touchedGround) {
-    if (dynamics[0].moveValues.x > .1) {
-      dynamics[0].moveValues.x -= .15;
-    } else if (dynamics[0].moveValues.x < -.1) {
-      dynamics[0].moveValues.x += .15;
+    if (objects.player.moveValues.x > .1) {
+      objects.player.moveValues.x -= .15;
+    } else if (objects.player.moveValues.x < -.1) {
+      objects.player.moveValues.x += .15;
     } else {
-      dynamics[0].moveValues.x = 0;
+      objects.player.moveValues.x = 0;
     }
   }
 
   if (touchedGround) {
     // TODO: Wall Jumps
-    // FIXME: Can jump into the top of statics and get stuck
+    // FIXME: Can jump into the top of objects.solids and get stuck
     if (moveUp) {
       touchedGround = false;
-      dynamics[0].moveValues.y = config.jumpHeight;
+      objects.player.moveValues.y = config.jumpHeight;
     }
   }
 
-  if (detectCollision(dynamics[0]).head) {
-    dynamics[0].height = dynamics[0].initHeight / 2;
+  if (detectCollision(objects.player, objects.solids).top) {
+    objects.player.height = objects.player.initHeight / 2;
   }
 
-  let colliding = detectCollision(dynamics[0]);
+  scrollOffset.x = scrollOffset.y = 0;
 
-  lastPos = [dynamics[0].currentPosx, dynamics[0].currentPosy];
-  lastMove = [dynamics[0].moveValues.x, dynamics[0].moveValues.y];
-
-
-  config.scrollOffset.x = config.scrollOffset.y = 0;
-  if (colliding.border) {
-    // TODO: Make bottom/top scrolling work
-    // if (colliding.top) {
-    //   scrollOffset.y = (dynamics[0].moveValues.y * dynamics[0].moveValues.amount) * -1;
-    //   // dynamics[0].moveValues.y = -.01;
-    // }
-    // if (colliding.bottom) {
-
-    //   scrollOffset.y = (dynamics[0].moveValues.y * dynamics[0].moveValues.amount) * -1;
-    //   // dynamics[0].moveValues.y = .01;
-    // }
-    if (colliding.left) {
-      config.scrollOffset.x = (dynamics[0].moveValues.x * dynamics[0].moveValues.amount) * -1;
-      // dynamics[0].moveValues.x = .01;
+  let colliding = detectCollision(objects.player, objects.solids);
+  if (colliding.collision) {
+    if (colliding.border && !detectCollision(objects.player, objects.solids).stopWall) {
+      // TODO: Make bottom/top scrolling work
+      if (colliding.borderLeft) {
+        scrollOffset.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
+      }
+      if (colliding.borderRight) {
+        scrollOffset.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
+      }
     }
-    if (colliding.right) {
-      config.scrollOffset.x = (dynamics[0].moveValues.x * dynamics[0].moveValues.amount) * -1;
-      // dynamics[0].moveValues.x = -.01;
+    // FIXME: Make this not jittery
+    if (colliding.x) {
+      objects.player.posx = objects.player.lastPos[0];
+      objects.player.moveValues.x = (objects.player.moveValues.x * -1);
     }
-  }
-  if (colliding.x) {
-    dynamics[0].moveValues.x = 0;
-    dynamics[0].currentPosx = lastPos[0];
-  }
-  if (colliding.y) {
-    touchedGround = colliding.head ? false : true;
-    dynamics[0].moveValues.y = 0;
-    dynamics[0].currentPosy = lastPos[1];
-  }
-  if (colliding.stopWall) {
-    dynamics[0].moveValues.x = -1 * lastMove[0];
-    setTimeout(() => { // This makes it so the user is not "bounced" off a stop wall
-      dynamics[0].moveValues.x = 0;
-      dynamics[0].moveValues.amount = 0;
-    }, 0);
+    if (colliding.y) {
+      touchedGround = colliding.top ? false : true;
+      objects.player.posy = objects.player.lastPos[1];
+    }
   }
 }
 
 function playerMovementNoGravity() {
   if (moveUp || moveDown || moveLeft || moveRight) {
-    dynamics[0].moveValues.amount = dynamics[0].moveValues.speed;
+    objects.player.moveValues.amount = objects.player.moveValues.speed;
   } else {
-    dynamics[0].moveValues.amount = 0;
+    objects.player.moveValues.amount = 0;
     return;
   }
 
-  dynamics[0].moveValues.x = 0;
-  dynamics[0].moveValues.y = 0;
+  objects.player.moveValues.x = 0;
+  objects.player.moveValues.y = 0;
 
   if ((moveRight != moveLeft) && (moveUp != moveDown)) {
     if (moveRight && moveUp) {
-      dynamics[0].moveValues.x = 1 / Math.sqrt(2);
-      dynamics[0].moveValues.y = -1 / Math.sqrt(2);
+      objects.player.moveValues.x = 1 / Math.sqrt(2);
+      objects.player.moveValues.y = -1 / Math.sqrt(2);
 
     } else if (moveRight && moveDown) {
-      dynamics[0].moveValues.x = 1 / Math.sqrt(2);
-      dynamics[0].moveValues.y = 1 / Math.sqrt(2);
+      objects.player.moveValues.x = 1 / Math.sqrt(2);
+      objects.player.moveValues.y = 1 / Math.sqrt(2);
 
     } else if (moveLeft && moveUp) {
-      dynamics[0].moveValues.x = -1 / Math.sqrt(2);
-      dynamics[0].moveValues.y = -1 / Math.sqrt(2);
+      objects.player.moveValues.x = -1 / Math.sqrt(2);
+      objects.player.moveValues.y = -1 / Math.sqrt(2);
 
     } else {
-      dynamics[0].moveValues.x = -1 / Math.sqrt(2);
-      dynamics[0].moveValues.y = 1 / Math.sqrt(2);
+      objects.player.moveValues.x = -1 / Math.sqrt(2);
+      objects.player.moveValues.y = 1 / Math.sqrt(2);
 
     }
   } else if (moveRight && !moveLeft) {
-    dynamics[0].moveValues.x = 1;
+    objects.player.moveValues.x = 1;
   } else if (moveLeft && !moveRight) {
-    dynamics[0].moveValues.x = -1;
+    objects.player.moveValues.x = -1;
   } else if (moveUp && !moveDown) {
-    dynamics[0].moveValues.y = -1;
+    objects.player.moveValues.y = -1;
   } else if (moveDown && !moveUp) {
-    dynamics[0].moveValues.y = 1;
+    objects.player.moveValues.y = 1;
   } else {
-    dynamics[0].moveValues.x = 0;
-    dynamics[0].moveValues.y = 0;
+    objects.player.moveValues.x = 0;
+    objects.player.moveValues.y = 0;
   }
 
-  lastPos = [dynamics[0].currentPosx, dynamics[0].currentPosy];
-  lastMove = [dynamics[0].moveValues.x, dynamics[0].moveValues.y];
-  let colliding = detectCollision(dynamics[0])
+  lastPos = [objects.player.posx, objects.player.posy];
+  lastMove = [objects.player.moveValues.x, objects.player.moveValues.y];
+  let colliding = detectCollision(objects.player)
 
   if (colliding.x) {
-    dynamics[0].moveValues.x = 0;
-    dynamics[0].currentPosx = lastPos[0];
+    objects.player.moveValues.x = 0;
+    objects.player.posx = lastPos[0];
   }
-  if (colliding.feet) {
-    dynamics[0].moveValues.y = 0;
-    dynamics[0].currentPosy = lastPos[1];
+  if (colliding.bottom) {
+    objects.player.moveValues.y = 0;
+    objects.player.posy = lastPos[1];
   }
 
 }
 
-function enemyMovement(params) {
-
-}
-
-let detectCollision = function (object) {
-  let collision =
-  {
+let detectCollision = function (entity, checkArray = []) {
+  let collision = {
+    collision: false,
+    bottom: false,
+    top: false,
+    right: false,
+    left: false,
     x: false,
     y: false,
-    feet: false,
-    head: false,
+
+    stopWall: false,
+
     border: false,
+    borderTop: false,
+    borderBottom: false,
+    borderRight: false,
+    borderLeft: false,
     borderX: false,
     borderY: false,
-    stopWall: false,
-    left: false,
-    right: false,
-    top: false,
-    bottom: false
   };
 
-  for (let i = 0; i < statics.length; i++) {
+  for (let i = 0; i < checkArray.length; i++) {
     if (
-      object.currentPosx + (object.moveValues.x * object.moveValues.amount) + object.width > statics[i].currentPosx &&
-      object.currentPosx + (object.moveValues.x * object.moveValues.amount) < statics[i].currentPosx + statics[i].width &&
-      object.currentPosy + object.height > statics[i].currentPosy &&
-      object.currentPosy < statics[i].currentPosy + statics[i].height
+      entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > checkArray[i].posx &&
+      entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
+      entity.posy + entity.height > checkArray[i].posy &&
+      entity.posy < checkArray[i].posy + checkArray[i].height
     ) {
-      if (statics[i].name == 'stopWall') { collision.stopWall = true; }
-      if (statics[i].name == 'borderWallRight') { collision.right = collision.border = true; }
-      if (statics[i].name == 'borderWallLeft') { collision.left = collision.border = true; }
-      collision.x = true;
+      if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
+      if (checkArray[i].mainType == 'borderWallLeft') { collision.borderLeft = true; }
+      collision.left = true;
     }
 
     if (
-      object.currentPosx + object.width > statics[i].currentPosx &&
-      object.currentPosx < statics[i].currentPosx + statics[i].width &&
-      object.currentPosy + (object.moveValues.y * object.moveValues.amount) + object.height / 2 >= statics[i].currentPosy &&
-      object.currentPosy + (object.moveValues.y * object.moveValues.amount) <= statics[i].currentPosy + statics[i].height
+      entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > checkArray[i].posx &&
+      entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
+      entity.posy + entity.height > checkArray[i].posy &&
+      entity.posy < checkArray[i].posy + checkArray[i].height
     ) {
-      if (statics[i].name == 'stopWall') { collision.stopWall = true; }
-      if (statics[i].name == 'borderWallTop') { collision.top = collision.border = true; }
-      if (statics[i].name == 'borderWallBottom') { collision.bottom = collision.border = true; }
-      collision.feet = true;
+      if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
+      if (checkArray[i].mainType == 'borderWallRight') { collision.borderRight = true; }
+      collision.right = true;
     }
 
     if (
-      object.currentPosx + object.width > statics[i].currentPosx &&
-      object.currentPosx < statics[i].currentPosx + statics[i].width &&
-      object.currentPosy + (object.moveValues.y * object.moveValues.amount) + object.height >= statics[i].currentPosy &&
-      object.currentPosy + (object.moveValues.y * object.moveValues.amount) + (object.height / 2) <= statics[i].currentPosy + statics[i].height
+      entity.posx + entity.width > checkArray[i].posx &&
+      entity.posx < checkArray[i].posx + checkArray[i].width &&
+      entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height / 2 >= checkArray[i].posy &&
+      entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= checkArray[i].posy + checkArray[i].height
     ) {
-      collision.head = true;
+      if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
+      if (checkArray[i].mainType == 'borderWallBottom') { collision.borderBottom = true; }
+      collision.bottom = true;
+    }
+
+    if (
+      entity.posx + entity.width > checkArray[i].posx &&
+      entity.posx < checkArray[i].posx + checkArray[i].width &&
+      entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= checkArray[i].posy &&
+      entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) <= checkArray[i].posy + checkArray[i].height
+    ) {
+      if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
+      if (checkArray[i].mainType == 'borderWallTop') { collision.borderTop = true; }
+      collision.top = true;
     }
   }
-  collision.y = collision.feet || collision.head;
-  collision.borderX = collision.left || collision.right;
-  collision.borderY = collision.top || collision.bottom;
+  collision.y = collision.bottom || collision.top;
+  collision.x = collision.right || collision.left;
+  collision.collision = collision.x || collision.y;
+
+  collision.borderX = collision.borderLeft || collision.borderRight;
+  collision.borderY = collision.borderTop || collision.borderBottom;
+  collision.border = collision.borderX || collision.borderY;
+
+  // console.log(collision);
   return collision;
 }
 
 makePlayer = function () {
   console.log('makePlayer');
-  dynamics.push(
-    new dynamicObjImg(62 * 2, 104 * 2, canvas.width / 2, canvas.height / 2, '/assets/img/fort.png')
-  );
+
+  new entity(62 * 2, 104 * 2, canvas.width / 2, canvas.height / 2, ['img', '/assets/img/fort.png'], ['player']);
+
   makePlayer = noop();
 }
 
@@ -463,47 +409,25 @@ makeBorder = function () {
   let borderColor = 'rgba(0, 0, 0, 0)';
   // let borderColor = '#9370db';
 
-  let noScrollStatics = [
-    new staticObjRect(canvas.width, borderThickness, 0, 0, borderColor, 'borderWallBottom'),
-    new staticObjRect(canvas.width, borderThickness, 0, canvas.height - borderThickness, borderColor, 'borderWallTop'),
-    new staticObjRect(borderThickness, canvas.height, 0, 0, borderColor, 'borderWallLeft'),
-    new staticObjRect(borderThickness, canvas.height, canvas.width - borderThickness, 0, borderColor, 'borderWallRight')
-  ];
+  new entity(canvas.width, borderThickness, 0, 0, ['draw', borderColor], ['borderWallBottom', 'solid', 'frozen']);
+  new entity(canvas.width, borderThickness, 0, canvas.height - borderThickness, ['draw', borderColor], ['borderWallTop', 'solid', 'frozen']);
+  new entity(borderThickness, canvas.height, 0, 0, ['draw', borderColor], ['borderWallLeft', 'solid', 'frozen']);
+  new entity(borderThickness, canvas.height, canvas.width - borderThickness, 0, ['draw', borderColor], ['borderWallRight', 'solid', 'frozen']);
 
-  statics = statics.concat(noScrollStatics);
-  noScroll = noScroll.concat(noScrollStatics);
   makeBorder = noop();
 }
 
-makeStatics = function () {
+makeBox = function () {
   console.log('makeBox');
-  statics = statics.concat(
-    new staticObjRect(120, 120, 600, 0, '#f370db'),
-    new staticObjRect(120, 20, 800, 120, '#f370db'),
-    new staticObjRect(120, 20, 1000, 220, '#f370db'),
-    new staticObjRect(120, 20, 1400, 120, '#f370db'),
-    new staticObjRect(1000000, 40, 0, 0, '#92d03b', 'floor'),
-    new staticObjRect(120, 10000, -80, 0, '#92d03b', 'stopWall')
-  );
-  makeStatics = noop();
-}
 
-function scrollFrame() {
-  if (player.x + config.scrollDistance > offset.x + canvas.width) {
-    offset.x = player.x + config.scrollDistance - canvas.width
-  }
-  if (player.x - config.scrollDistance < offset.x && config.scrollDistance < offset.x) {
-    offset.x = player.x - config.scrollDistance
-  }
-  if (player.y - config.scrollDistance - player.height < offset.y && canvas.height - config.scrollDistance < offset.y) {
-    offset.y = player.y - config.scrollDistance - player.height * 2;
-  }
-  if (canvas.height - config.scrollDistance < offset.y) {
-    offset.y = canvas.height - config.scrollDistance
-  }
-  if (player.y + config.scrollDistance > offset.y + canvas.height) {
-    offset.y = player.y + config.scrollDistance - canvas.height
-  }
+  new entity(120, 120, 600, 0, ['draw', '#f370db']);
+  new entity(120, 20, 800, 120, ['draw', '#f370db']);
+  new entity(120, 20, 1000, 220, ['draw', '#f370db']);
+  new entity(120, 20, 1400, 120, ['draw', '#f370db']);
+  new entity(1000000, 40, 0, 0, ['draw', '#92d03b'], ['floor', 'solid']);
+  new entity(120, 10000, -80, 0, ['draw', '#92d03b'], ['stopWall', 'solid']);
+
+  makeBox = noop();
 }
 
 function playSound(sound) {
@@ -515,6 +439,6 @@ window.testScript = function () {
   console.log('test');
   makePlayer();
   makeBorder();
-  makeStatics();
+  makeBox();
   updateInterval = setInterval(frameUpdate, 16);
 }
