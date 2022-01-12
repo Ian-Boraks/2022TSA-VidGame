@@ -1,11 +1,8 @@
-let canvas; // Canvas
-let context; // Canvas context
-
 let dynamics = [];
 let statics = [];
 let noScroll = [];
 
-var config = {
+let config = {
   gravityEnabled: true,
   gravity: .1,
   jumpHeight: 2,
@@ -17,27 +14,24 @@ var config = {
   }
 }
 
-var moveUp = false;
-var moveLeft = false;
-var moveDown = false;
-var moveRight = false;
-var touchedGround = false;
-var lastMove = [];
+let [moveUp, moveLeft, moveDown, moveRight] = [false, false, false, false];
+let touchedGround = false;
+let lastMove = [];
 
 
 // * ON LOAD --------------------------------------------------------
-canvas = document.getElementById("game-canvas");
+const canvas = document.getElementById("game-canvas");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-context = canvas.getContext("2d");
+const context = canvas.getContext("2d");
 context.translate(0, canvas.height);
 context.scale(1, -1);
 
 window.addEventListener('DOMContentLoaded', function () {
   // ! This is an example of how to use the sound function
   // ! Now when you click the screen the funny sound will play
-  // var gameWindow = document.getElementById('game-window');
+  // let gameWindow = document.getElementById('game-window');
   // gameWindow.addEventListener('click', function () {
   //   playSound('trombone');
   // });
@@ -206,7 +200,7 @@ function frameUpdate() {
 }
 
 function onKeyDown(event) {
-  var keyCode = event.keyCode;
+  let keyCode = event.keyCode;
   switch (keyCode) {
     case 68: //d
       moveRight = true;
@@ -228,7 +222,7 @@ function onKeyDown(event) {
 }
 
 function onKeyUp(event) {
-  var keyCode = event.keyCode;
+  let keyCode = event.keyCode;
 
   switch (keyCode) {
     case 68: //d
@@ -397,7 +391,7 @@ function enemyMovement(params) {
 
 }
 
-var detectCollision = function (object) {
+let detectCollision = function (object) {
   let collision =
   {
     x: false,
