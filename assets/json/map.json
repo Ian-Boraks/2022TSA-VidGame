@@ -1,0 +1,10 @@
+{
+  "init": [
+    {"width": 120, "height": 120, "initPosx": 600, "initPosy": 0, "styles": ["draw", "#f370db"], "types": ["solid"]},
+    {"width": 120, "height": 20, "initPosx": 800, "initPosy": 140, "styles": ["draw", "#f370db"], "types": ["solid"]},
+    {"width": 120, "height": 20, "initPosx": 1000, "initPosy": 240, "styles": ["draw", "#f370db"], "types": ["solid"]},
+    {"width": 120, "height": 20, "initPosx": 1400, "initPosy": 120, "styles": ["draw", "#f370db"], "types": ["solid"]},
+    {"width": 1000000, "height": 40, "initPosx": 0, "initPosy": 0, "styles": ["draw", "#92d03b"], "types": ["floor", "solid"]},
+    {"width": 120, "height": 10000, "initPosx": -80, "initPosy": 0, "styles": ["draw", "#92d03b"], "types": ["stopWall", "solid"]}
+  ]
+}

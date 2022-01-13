@@ -7,12 +7,16 @@ let objects = {
   nonFrozen: [],
 };
 
+let map = {};
+let spriteSheets = {};
+
 const config = {
   gravityEnabled: true,
   gravity: .1,
   jumpHeight: 2,
   defaultPlayerSpeed: 7,
   scrollDistance: 300,
+  borderThickness: 120
 }
 
 let scrollOffset = {
@@ -20,12 +24,40 @@ let scrollOffset = {
   y: 0
 }
 
-let [moveUp, moveLeft, moveDown, moveRight] = [false, false, false, false];
-let touchedGround = false;
+let keys = {
+  dKey: false,
+  sKey: false,
+  aKey: false,
+  wKey: false,
+  enterKey: false,
+  spaceKey: false,
+};
 let lastMove = [];
 
 
 // * ON LOAD --------------------------------------------------------
+$.getJSON(
+  {
+    async: false,
+    url: '/assets/json/map.json',
+    success: function (data) {
+      map = data;
+      console.log(map);
+    }
+  }
+)
+
+$.getJSON(
+  {
+    async: false,
+    url: '/assets/json/sprite-sheet.json',
+    success: function (data) {
+      spriteSheets = data;
+      console.log(spriteSheets);
+    }
+  }
+)
+
 const canvas = document.getElementById("game-canvas");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -70,7 +102,12 @@ class entity {
       case 'img':
         this.imgLink = styles[1];
         this.img = new Image();
-        this.img.src = this.imgLink;
+        this.img.src = spriteSheets[styles[1]]["img"];
+        this.animation = "idle";
+        this.sx = spriteSheets[styles[1]][this.animation]["sx"];
+        this.sy = spriteSheets[styles[1]][this.animation]["sy"];
+        this.sWidth = spriteSheets[styles[1]][this.animation]["sWidth"];
+        this.sHeight = spriteSheets[styles[1]][this.animation]["sHeight"];
         break;
       case 'draw':
         this.color = styles[1];
@@ -82,6 +119,8 @@ class entity {
 
     if (types.indexOf('player') > -1) {
       objects.player = this;
+      this.crouched = false;
+      this.touchedGround = false;
       this.lastPos = [undefined, undefined];
       this.lastMove = [undefined, undefined];
     }
@@ -96,7 +135,9 @@ class entity {
   draw() {
     switch (this.style) {
       case 'img':
-        context.drawImage(this.img, this.posx, this.posy, this.width, this.height);
+        // context.drawImage(this.img, this.sx, this.sy, this.sWidth, this.sHeight, this.posx, this.posy, this.width, this.height);
+        context.drawImage(this.img, this.sx, 0, this.width, this.height, this.posx, this.posy, this.width, this.height);
+
         break;
       case 'draw':
         context.beginPath();
@@ -137,20 +178,22 @@ function onKeyDown(event) {
   let keyCode = event.keyCode;
   switch (keyCode) {
     case 68: //d
-      moveRight = true;
+      keys.dKey = true;
       break;
     case 83: //s
-      moveDown = true;
+      keys.sKey = true;
       break;
     case 65: //a
-      moveLeft = true;
+      keys.aKey = true;
       break;
     case 87: //w
-      moveUp = true;
+      keys.wKey = true;
       break;
     case 13: //enter
-      keyEnter = true;
-      // testScript();
+      keys.enterKey = true;
+      break;
+    case 32: //space
+      keys.spaceKey = true;
       break;
   }
 }
@@ -160,29 +203,40 @@ function onKeyUp(event) {
 
   switch (keyCode) {
     case 68: //d
-      moveRight = false;
+      keys.dKey = false;
       break;
     case 83: //s
-      moveDown = false;
+      keys.sKey = false;
       break;
     case 65: //a
-      moveLeft = false;
+      keys.aKey = false;
       break;
     case 87: //w
-      moveUp = false;
+      keys.wKey = false;
       break;
     case 13: //enter
-      keyEnter = false;
+      keys.enterKey = false;
+      break;
+    case 32: //space
+      keys.spaceKey = false;
       break;
   }
 }
+
+
+// * UTILITY FUNCTIONS ------------------------------------------------
+Object.prototype.getKeysByValue = function (value) {
+  let keys = Object.keys(this);
+  return keys.filter(key => this[key] === value);
+}
+
 
 // * FUNCTIONS --------------------------------------------------------
 function noop() { /* No operation function */ }
 
 function frameUpdate() {
   context.clearRect(0, 0, canvas.width, canvas.height);
-  if (config.gravityEnabled) { playerMovementGravity(); } else { playerMovementNoGravity(); }
+  if (config.gravityEnabled) { playerMovementGravity(objects.player); } else { playerMovementNoGravity(objects.player); }
   for (let i = 0; i < objects.nonFrozen.length; i++) {
     objects.nonFrozen[i].move();
     objects.nonFrozen[i].draw();
@@ -192,203 +246,141 @@ function frameUpdate() {
   }
 }
 
-function playerMovementGravity() {
-  objects.player.moveValues.amount = objects.player.moveValues.speed;
+function playerMovementGravity(player) {
+  moveValues = player.moveValues;
+  moveValues.amount = moveValues.speed;
 
-  if (objects.player.moveValues.y > -2) {
-    objects.player.moveValues.y -= config.gravity;
+  if (moveValues.y > -2) {
+    moveValues.y -= config.gravity;
   }
 
-  if (moveDown) {
-    objects.player.height = objects.player.initHeight / 2;
-  } else {
-    objects.player.height = objects.player.initHeight;
-  }
-
-  if (moveLeft && moveRight) {
-    objects.player.moveValues.x = 0;
-  } else if (moveLeft) {
-    objects.player.moveValues.x = -1;
-  } else if (moveRight) {
-    objects.player.moveValues.x = 1;
-  } else if (touchedGround) {
-    if (objects.player.moveValues.x > .1) {
-      objects.player.moveValues.x -= .15;
-    } else if (objects.player.moveValues.x < -.1) {
-      objects.player.moveValues.x += .15;
+  if (player.touchedGround) {
+    if (moveValues.x > .2) {
+      moveValues.x -= .2;
+    } else if (moveValues.x < -.2) {
+      moveValues.x += .2;
     } else {
-      objects.player.moveValues.x = 0;
+      moveValues.x = 0;
     }
   }
 
-  if (touchedGround) {
-    // TODO: Wall Jumps
-    // FIXME: Can jump into the top of objects.solids and get stuck
-    if (moveUp) {
-      touchedGround = false;
-      objects.player.moveValues.y = config.jumpHeight;
+  keysDown = keys.getKeysByValue(true);
+  if (!keys.sKey) { player.crouched = false; }
+
+  for (let i = 0; i < keysDown.length; i++) {
+    switch (keysDown[i]) {
+      case 'dKey':
+        moveValues.x = 1;
+        break;
+      case 'sKey':
+        player.crouched = true;
+        break;
+      case 'aKey':
+        moveValues.x = -1;
+        break;
+      case 'wKey':
+        break;
+      case 'enterKey':
+        break;
+      case 'spaceKey':
+        if (player.touchedGround) {
+          // TODO: Wall Jumps
+          // FIXME: Can jump into the top of objects.solids and get stuck
+          player.touchedGround = false;
+          moveValues.y = config.jumpHeight;
+        }
+      default:
+        break;
     }
   }
-
-  if (detectCollision(objects.player, objects.solids).top) {
-    objects.player.height = objects.player.initHeight / 2;
-  }
-
-  scrollOffset.x = scrollOffset.y = 0;
-
-  let colliding = detectCollision(objects.player, objects.solids);
-  if (colliding.collision) {
-    if (colliding.border && !detectCollision(objects.player, objects.solids).stopWall) {
-      // TODO: Make bottom/top scrolling work
-      if (colliding.borderLeft) {
-        scrollOffset.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
-      }
-      if (colliding.borderRight) {
-        scrollOffset.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
-      }
-    }
-    // FIXME: Make this not jittery
-    if (colliding.x) {
-      objects.player.posx = objects.player.lastPos[0];
-      objects.player.moveValues.x = (objects.player.moveValues.x * -1);
-    }
-    if (colliding.y) {
-      touchedGround = colliding.top ? false : true;
-      objects.player.posy = objects.player.lastPos[1];
-    }
-  }
-}
-
-function playerMovementNoGravity() {
-  if (moveUp || moveDown || moveLeft || moveRight) {
-    objects.player.moveValues.amount = objects.player.moveValues.speed;
-  } else {
-    objects.player.moveValues.amount = 0;
-    return;
-  }
-
-  objects.player.moveValues.x = 0;
-  objects.player.moveValues.y = 0;
-
-  if ((moveRight != moveLeft) && (moveUp != moveDown)) {
-    if (moveRight && moveUp) {
-      objects.player.moveValues.x = 1 / Math.sqrt(2);
-      objects.player.moveValues.y = -1 / Math.sqrt(2);
-
-    } else if (moveRight && moveDown) {
-      objects.player.moveValues.x = 1 / Math.sqrt(2);
-      objects.player.moveValues.y = 1 / Math.sqrt(2);
-
-    } else if (moveLeft && moveUp) {
-      objects.player.moveValues.x = -1 / Math.sqrt(2);
-      objects.player.moveValues.y = -1 / Math.sqrt(2);
-
-    } else {
-      objects.player.moveValues.x = -1 / Math.sqrt(2);
-      objects.player.moveValues.y = 1 / Math.sqrt(2);
-
-    }
-  } else if (moveRight && !moveLeft) {
-    objects.player.moveValues.x = 1;
-  } else if (moveLeft && !moveRight) {
-    objects.player.moveValues.x = -1;
-  } else if (moveUp && !moveDown) {
-    objects.player.moveValues.y = -1;
-  } else if (moveDown && !moveUp) {
-    objects.player.moveValues.y = 1;
-  } else {
-    objects.player.moveValues.x = 0;
-    objects.player.moveValues.y = 0;
-  }
-
-  lastPos = [objects.player.posx, objects.player.posy];
-  lastMove = [objects.player.moveValues.x, objects.player.moveValues.y];
-  let colliding = detectCollision(objects.player)
-
-  if (colliding.x) {
-    objects.player.moveValues.x = 0;
-    objects.player.posx = lastPos[0];
-  }
-  if (colliding.bottom) {
-    objects.player.moveValues.y = 0;
-    objects.player.posy = lastPos[1];
-  }
-
+  detectCollision(player, objects.solids);
+  player.height = player.crouched ? player.initHeight / 2 : player.initHeight;
 }
 
 let detectCollision = function (entity, checkArray = []) {
   let collision = {
-    collision: false,
-    bottom: false,
-    top: false,
-    right: false,
-    left: false,
-    x: false,
-    y: false,
-
-    stopWall: false,
-
-    border: false,
     borderTop: false,
     borderBottom: false,
     borderRight: false,
     borderLeft: false,
-    borderX: false,
-    borderY: false,
   };
 
   for (let i = 0; i < checkArray.length; i++) {
     if (
       entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > checkArray[i].posx &&
       entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
-      entity.posy + entity.height > checkArray[i].posy &&
-      entity.posy < checkArray[i].posy + checkArray[i].height
+      entity.posy + entity.height - 10 > checkArray[i].posy &&
+      entity.posy + 10 < checkArray[i].posy + checkArray[i].height
     ) {
       if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
       if (checkArray[i].mainType == 'borderWallLeft') { collision.borderLeft = true; }
+      entity.posx = checkArray[i].posx + checkArray[i].width + (entity.moveValues.x * entity.moveValues.amount * -1);
       collision.left = true;
+      // console.log('left');
     }
 
     if (
       entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > checkArray[i].posx &&
       entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
-      entity.posy + entity.height > checkArray[i].posy &&
-      entity.posy < checkArray[i].posy + checkArray[i].height
+      entity.posy + entity.height - 10 > checkArray[i].posy &&
+      entity.posy + 10 < checkArray[i].posy + checkArray[i].height
     ) {
       if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
       if (checkArray[i].mainType == 'borderWallRight') { collision.borderRight = true; }
+      entity.posx = checkArray[i].posx - entity.width + (entity.moveValues.x * entity.moveValues.amount * -1);
       collision.right = true;
+      // console.log('right');
     }
 
     if (
-      entity.posx + entity.width > checkArray[i].posx &&
-      entity.posx < checkArray[i].posx + checkArray[i].width &&
+      entity.posx + entity.width - 10 > checkArray[i].posx &&
+      entity.posx + 10 < checkArray[i].posx + checkArray[i].width &&
       entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height / 2 >= checkArray[i].posy &&
       entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= checkArray[i].posy + checkArray[i].height
     ) {
       if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
       if (checkArray[i].mainType == 'borderWallBottom') { collision.borderBottom = true; }
+      if (entity == objects.player) { entity.touchedGround = true; }
+      entity.posy = checkArray[i].posy + checkArray[i].height + (entity.moveValues.y * entity.moveValues.amount * -1);
       collision.bottom = true;
     }
 
     if (
-      entity.posx + entity.width > checkArray[i].posx &&
-      entity.posx < checkArray[i].posx + checkArray[i].width &&
+      entity.posx + entity.width - 10 > checkArray[i].posx &&
+      entity.posx + 10 < checkArray[i].posx + checkArray[i].width &&
       entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= checkArray[i].posy &&
       entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) <= checkArray[i].posy + checkArray[i].height
     ) {
       if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
       if (checkArray[i].mainType == 'borderWallTop') { collision.borderTop = true; }
+      entity.posy = checkArray[i].posy - entity.height;
+      entity.moveValues.y = 0;
       collision.top = true;
+      // console.log('top');
+    }
+
+    if (entity == objects.player) {
+      if (
+        entity.posx + entity.width - 10 > checkArray[i].posx &&
+        entity.posx + 10 < checkArray[i].posx + checkArray[i].width &&
+        entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.initHeight >= checkArray[i].posy &&
+        entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.initHeight / 2) <= checkArray[i].posy + checkArray[i].height
+      ) {
+        if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
+        if (checkArray[i].mainType == 'borderWallTop') { collision.borderTop = true; }
+        entity.crouched = true;
+      }
     }
   }
-  collision.y = collision.bottom || collision.top;
-  collision.x = collision.right || collision.left;
-  collision.collision = collision.x || collision.y;
-
-  collision.borderX = collision.borderLeft || collision.borderRight;
-  collision.borderY = collision.borderTop || collision.borderBottom;
-  collision.border = collision.borderX || collision.borderY;
+  if (entity == objects.player) {
+    scrollOffset.x = scrollOffset.y = 0;
+    if (collision.borderLeft) {
+      scrollOffset.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
+    }
+    if (collision.borderRight) {
+      scrollOffset.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
+    }
+  }
 
   // console.log(collision);
   return collision;
@@ -397,7 +389,7 @@ let detectCollision = function (entity, checkArray = []) {
 makePlayer = function () {
   console.log('makePlayer');
 
-  new entity(62 * 2, 104 * 2, canvas.width / 2, canvas.height / 2, ['img', '/assets/img/fort.png'], ['player']);
+  new entity(250, 500, canvas.width / 2, canvas.height / 2, ['img', "player"], ['player']);
 
   makePlayer = noop();
 }
@@ -405,29 +397,33 @@ makePlayer = function () {
 makeBorder = function () {
   console.log('makeBorder');
 
-  let borderThickness = 40;
+  let borderThickness = config.borderThickness;
   let borderColor = 'rgba(0, 0, 0, 0)';
   // let borderColor = '#9370db';
 
-  new entity(canvas.width, borderThickness, 0, 0, ['draw', borderColor], ['borderWallBottom', 'solid', 'frozen']);
-  new entity(canvas.width, borderThickness, 0, canvas.height - borderThickness, ['draw', borderColor], ['borderWallTop', 'solid', 'frozen']);
+  // new entity(canvas.width, borderThickness, 0, 0, ['draw', borderColor], ['borderWallBottom', 'solid', 'frozen']);
+  // new entity(canvas.width, borderThickness, 0, canvas.height - borderThickness, ['draw', borderColor], ['borderWallTop', 'solid', 'frozen']);
   new entity(borderThickness, canvas.height, 0, 0, ['draw', borderColor], ['borderWallLeft', 'solid', 'frozen']);
   new entity(borderThickness, canvas.height, canvas.width - borderThickness, 0, ['draw', borderColor], ['borderWallRight', 'solid', 'frozen']);
 
   makeBorder = noop();
 }
 
-makeBox = function () {
-  console.log('makeBox');
+function loadMap(mapID = "init") {
+  console.log('loadMap');
 
-  new entity(120, 120, 600, 0, ['draw', '#f370db']);
-  new entity(120, 20, 800, 120, ['draw', '#f370db']);
-  new entity(120, 20, 1000, 220, ['draw', '#f370db']);
-  new entity(120, 20, 1400, 120, ['draw', '#f370db']);
-  new entity(1000000, 40, 0, 0, ['draw', '#92d03b'], ['floor', 'solid']);
-  new entity(120, 10000, -80, 0, ['draw', '#92d03b'], ['stopWall', 'solid']);
-
-  makeBox = noop();
+  let mapObjects = map[mapID]
+  let length = Object.keys(mapObjects).length;
+  for (let i = 0; i < length; i++) {
+    new entity(
+      mapObjects[i]["width"],
+      mapObjects[i]["height"],
+      mapObjects[i]["initPosx"],
+      mapObjects[i]["initPosy"],
+      mapObjects[i]["styles"],
+      mapObjects[i]["types"]
+    );
+  }
 }
 
 function playSound(sound) {
@@ -437,8 +433,8 @@ function playSound(sound) {
 
 window.testScript = function () {
   console.log('test');
-  makePlayer();
+  loadMap();
   makeBorder();
-  makeBox();
+  makePlayer();
   updateInterval = setInterval(frameUpdate, 16);
 }
