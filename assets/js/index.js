@@ -9,6 +9,10 @@ const config = {
 }
 
 let editorMode = false;
+let startBox = { x: 0, y: 0 };
+let endBox = { x: 0, y: 0 };
+let boxHolder = [];
+
 let map = {};
 let spriteSheets = {};
 let animationRunDelay = config.defaultAnimationRunDelay;
@@ -39,8 +43,6 @@ let keys = {
   dKey: false,
   sKey: false,
   aKey: false,
-  // wKey: false,
-  enterKey: false,
   spaceKey: false,
 };
 
@@ -48,6 +50,8 @@ let lastMove = [];
 
 
 // * ON LOAD --------------------------------------------------------
+alert("To use the editor, press enter.\nEditor controls:\nClick+Drag to make solid\nShift+Click+Drag to make ladder\nHold Z and then press ctrl to remove last solid\nHold X and then press ctrl to remove last ladder\nPress enter again to exit and to have map changes output to console\n\n\nGame Controls:\nSpace to jump\nA to move left\nD to move right\nS to crouch");
+
 $.getJSON(
   {
     async: false,
@@ -212,6 +216,34 @@ function onKeyDown(event) {
     case 16: //shift
       keys.shiftKey = true;
       break;
+    case 90: //z
+      keys.zKey = true;
+      break;
+    case 88: //x
+      keys.xKey = true;
+      break;
+    case 17: //ctrl
+      keys.ctrlKey = true;
+
+      let length = boxHolder.length;
+      if (editorMode && length > 0) {
+        if (keys.zKey && boxHolder[length - 1]['types'][0] == 'solid') {
+          boxHolder.pop();
+          objects.solids.pop();
+          objects.nonFrozen.pop();
+          console.log('removed solid');
+          break;
+        }
+        if (keys.xKey && boxHolder[length - 1]['types'][0] == 'ladder') {
+          boxHolder.pop();
+          objects.ladders.pop();
+          objects.nonFrozen.pop();
+          console.log('removed ladder');
+          break;
+        }
+        console.log('Error: cannot remove non-solid or non-ladder');
+      }
+      break;
   }
 }
 
@@ -240,6 +272,15 @@ function onKeyUp(event) {
     case 16: //shift
       keys.shiftKey = false;
       break;
+    case 90: //z
+      keys.zKey = false;
+      break;
+    case 88: //x
+      keys.xKey = false;
+      break;
+    case 17: //ctrl
+      keys.ctrlKey = false;
+      break;
   }
 }
 
@@ -249,10 +290,6 @@ Object.prototype.getKeysByValue = function (value) {
   let keys = Object.keys(this);
   return keys.filter(key => this[key] === value);
 }
-
-let startBox = { x: 0, y: 0 };
-let endBox = { x: 0, y: 0 };
-let boxHolder = [];
 
 function getMousePosition(canvas, start, event) {
   let x = event.clientX - objects.origin.posx;
