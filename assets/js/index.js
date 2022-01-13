@@ -1,23 +1,27 @@
-let objects = {
-  player: null,
-  solids: [],
-  ladders: [],
-  slopes: [],
-  frozen: [],
-  nonFrozen: [],
-};
-
-let map = {};
-let spriteSheets = {};
-
 const config = {
   gravityEnabled: true,
   gravity: .1,
   jumpHeight: 2,
   defaultPlayerSpeed: 7,
   scrollDistance: 300,
-  borderThickness: 120
+  borderThickness: 120,
+  defaultAnimationRunDelay: 1,
 }
+
+let map = {};
+let spriteSheets = {};
+let animationRunDelay = config.defaultAnimationRunDelay;
+let animationRunDelayCounter = 0;
+
+let objects = {
+  player: null,
+  img: [],
+  solids: [],
+  ladders: [],
+  slopes: [],
+  frozen: [],
+  nonFrozen: [],
+};
 
 let scrollOffset = {
   x: 0,
@@ -28,10 +32,11 @@ let keys = {
   dKey: false,
   sKey: false,
   aKey: false,
-  wKey: false,
-  enterKey: false,
+  // wKey: false,
+  // enterKey: false,
   spaceKey: false,
 };
+
 let lastMove = [];
 
 
@@ -100,6 +105,7 @@ class entity {
 
     switch (styles[0]) {
       case 'img':
+        objects.img.push(this);
         this.imgLink = styles[1];
         this.img = new Image();
         this.img.src = spriteSheets[styles[1]]["img"];
@@ -135,9 +141,7 @@ class entity {
   draw() {
     switch (this.style) {
       case 'img':
-        // context.drawImage(this.img, this.sx, this.sy, this.sWidth, this.sHeight, this.posx, this.posy, this.width, this.height);
-        context.drawImage(this.img, this.sx, 0, this.width, this.height, this.posx, this.posy, this.width, this.height);
-
+        context.drawImage(this.img, this.sx, this.sy, this.sWidth, this.sHeight, this.posx, this.posy, this.width, this.height);
         break;
       case 'draw':
         context.beginPath();
@@ -237,6 +241,12 @@ function noop() { /* No operation function */ }
 function frameUpdate() {
   context.clearRect(0, 0, canvas.width, canvas.height);
   if (config.gravityEnabled) { playerMovementGravity(objects.player); } else { playerMovementNoGravity(objects.player); }
+  if (animationRunDelayCounter <= animationRunDelay) { animationRunDelayCounter++; } else { animationRunDelayCounter = 0; }
+  if (animationRunDelayCounter == animationRunDelay) {
+    for (let i = 0; i < objects.img.length; i++) {
+      animate(objects.img[i]);
+    }
+  }
   for (let i = 0; i < objects.nonFrozen.length; i++) {
     objects.nonFrozen[i].move();
     objects.nonFrozen[i].draw();
@@ -244,6 +254,25 @@ function frameUpdate() {
   for (let i = 0; i < objects.frozen.length; i++) {
     objects.frozen[i].draw();
   }
+}
+
+function animate(entity) {
+  let frames = spriteSheets[entity.imgLink][entity.animation]["frames"];
+
+  entity.sx += entity.sWidth;
+
+  if (entity.sx / entity.sWidth >= frames) { entity.sx = spriteSheets[entity.imgLink][entity.animation]["sx"]; }
+}
+
+function switchAnimation(entity, animationID, animationSpeed = config.defaultAnimationRunDelay) {
+  if (entity.animation == animationID) { return; }
+  animationRunDelay = animationSpeed;
+  entity.animation = animationID;
+  entity.sx = spriteSheets[entity.imgLink][entity.animation]["sx"];
+  entity.sy = spriteSheets[entity.imgLink][entity.animation]["sy"];
+  entity.sWidth = spriteSheets[entity.imgLink][entity.animation]["sWidth"];
+  entity.sHeight = spriteSheets[entity.imgLink][entity.animation]["sHeight"];
+  
 }
 
 function playerMovementGravity(player) {
@@ -265,6 +294,13 @@ function playerMovementGravity(player) {
   }
 
   keysDown = keys.getKeysByValue(true);
+  if (keysDown.length > 0 && player.touchedGround) { 
+    switchAnimation(player, 'walk'); 
+  } else if (keysDown.length == 0 && player.touchedGround) { 
+    switchAnimation(player, 'idle'); 
+  } else if (!player.touchedGround) {
+    switchAnimation(player, 'jump', 6);
+  }
   if (!keys.sKey) { player.crouched = false; }
 
   for (let i = 0; i < keysDown.length; i++) {
@@ -285,7 +321,7 @@ function playerMovementGravity(player) {
       case 'spaceKey':
         if (player.touchedGround) {
           // TODO: Wall Jumps
-          // FIXME: Can jump into the top of objects.solids and get stuck
+          playSound('trombone');
           player.touchedGround = false;
           moveValues.y = config.jumpHeight;
         }
@@ -298,6 +334,9 @@ function playerMovementGravity(player) {
 }
 
 let detectCollision = function (entity, checkArray = []) {
+  // TODO: Remove depreciated STOPWALL & FLOOR collision detection
+  // FIXME: 
+  let splitHitBoxOffset = 3;
   let collision = {
     borderTop: false,
     borderBottom: false,
@@ -309,8 +348,8 @@ let detectCollision = function (entity, checkArray = []) {
     if (
       entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > checkArray[i].posx &&
       entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
-      entity.posy + entity.height - 10 > checkArray[i].posy &&
-      entity.posy + 10 < checkArray[i].posy + checkArray[i].height
+      entity.posy + entity.height - splitHitBoxOffset > checkArray[i].posy &&
+      entity.posy + splitHitBoxOffset < checkArray[i].posy + checkArray[i].height
     ) {
       if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
       if (checkArray[i].mainType == 'borderWallLeft') { collision.borderLeft = true; }
@@ -322,8 +361,8 @@ let detectCollision = function (entity, checkArray = []) {
     if (
       entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > checkArray[i].posx &&
       entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
-      entity.posy + entity.height - 10 > checkArray[i].posy &&
-      entity.posy + 10 < checkArray[i].posy + checkArray[i].height
+      entity.posy + entity.height - splitHitBoxOffset > checkArray[i].posy &&
+      entity.posy + splitHitBoxOffset < checkArray[i].posy + checkArray[i].height
     ) {
       if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
       if (checkArray[i].mainType == 'borderWallRight') { collision.borderRight = true; }
@@ -333,9 +372,9 @@ let detectCollision = function (entity, checkArray = []) {
     }
 
     if (
-      entity.posx + entity.width - 10 > checkArray[i].posx &&
-      entity.posx + 10 < checkArray[i].posx + checkArray[i].width &&
-      entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height / 2 >= checkArray[i].posy &&
+      entity.posx + entity.width - splitHitBoxOffset > checkArray[i].posx &&
+      entity.posx + splitHitBoxOffset < checkArray[i].posx + checkArray[i].width &&
+      entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) >= checkArray[i].posy &&
       entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= checkArray[i].posy + checkArray[i].height
     ) {
       if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
@@ -346,8 +385,8 @@ let detectCollision = function (entity, checkArray = []) {
     }
 
     if (
-      entity.posx + entity.width - 10 > checkArray[i].posx &&
-      entity.posx + 10 < checkArray[i].posx + checkArray[i].width &&
+      entity.posx + entity.width - splitHitBoxOffset > checkArray[i].posx &&
+      entity.posx + splitHitBoxOffset < checkArray[i].posx + checkArray[i].width &&
       entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= checkArray[i].posy &&
       entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) <= checkArray[i].posy + checkArray[i].height
     ) {
@@ -361,8 +400,8 @@ let detectCollision = function (entity, checkArray = []) {
 
     if (entity == objects.player) {
       if (
-        entity.posx + entity.width - 10 > checkArray[i].posx &&
-        entity.posx + 10 < checkArray[i].posx + checkArray[i].width &&
+        entity.posx + entity.width - splitHitBoxOffset > checkArray[i].posx &&
+        entity.posx + splitHitBoxOffset < checkArray[i].posx + checkArray[i].width &&
         entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.initHeight >= checkArray[i].posy &&
         entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.initHeight / 2) <= checkArray[i].posy + checkArray[i].height
       ) {
@@ -372,6 +411,14 @@ let detectCollision = function (entity, checkArray = []) {
       }
     }
   }
+  // if (
+  //   entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > checkArray[i].posx &&
+  //   entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
+  //   entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) >= checkArray[i].posy &&
+  //   entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= checkArray[i].posy + checkArray[i].height
+  // ) {
+  //   console.log('help');
+  // }
   if (entity == objects.player) {
     scrollOffset.x = scrollOffset.y = 0;
     if (collision.borderLeft) {
@@ -379,6 +426,12 @@ let detectCollision = function (entity, checkArray = []) {
     }
     if (collision.borderRight) {
       scrollOffset.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
+    }
+    if (collision.borderTop) {
+      scrollOffset.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1;
+    }
+    if (collision.borderBottom) {
+      scrollOffset.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1;
     }
   }
 
@@ -389,7 +442,8 @@ let detectCollision = function (entity, checkArray = []) {
 makePlayer = function () {
   console.log('makePlayer');
 
-  new entity(250, 500, canvas.width / 2, canvas.height / 2, ['img', "player"], ['player']);
+  new entity(100, 200, canvas.width / 2, canvas.height / 2, ['img', 'player'], ['player']);
+  // new entity(canvas.width, canvas.height, 0, 0, ['draw', 'rgba(0,0,0,0)'], ['onScreenDetection', 'frozen']);
 
   makePlayer = noop();
 }
