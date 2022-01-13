@@ -8,6 +8,7 @@ const config = {
   defaultAnimationRunDelay: 1,
 }
 
+let editorMode = false;
 let map = {};
 let spriteSheets = {};
 let animationRunDelay = config.defaultAnimationRunDelay;
@@ -15,6 +16,7 @@ let animationRunDelayCounter = 0;
 
 let objects = {
   player: null,
+  origin: null,
   img: [],
   solids: [],
   ladders: [],
@@ -23,7 +25,12 @@ let objects = {
   nonFrozen: [],
 };
 
-let scrollOffset = {
+let scrollOffsetAdjustment = {
+  x: 0,
+  y: 0
+}
+
+let scrollOffsetTotal = {
   x: 0,
   y: 0
 }
@@ -33,7 +40,7 @@ let keys = {
   sKey: false,
   aKey: false,
   // wKey: false,
-  // enterKey: false,
+  enterKey: false,
   spaceKey: false,
 };
 
@@ -166,9 +173,9 @@ class entity {
         this.posy += this.moveValues.y * this.moveValues.amount;
         break;
       case false:
-        if (scrollOffset.x == 0 && scrollOffset.y == 0) { return; }
-        this.posx += scrollOffset.x;
-        this.posy += scrollOffset.y;
+        if (scrollOffsetAdjustment.x == 0 && scrollOffsetAdjustment.y == 0) { return; }
+        this.posx += scrollOffsetAdjustment.x;
+        this.posy += scrollOffsetAdjustment.y;
         break;
       default:
         console.log('Error: entity type not found');
@@ -195,9 +202,15 @@ function onKeyDown(event) {
       break;
     case 13: //enter
       keys.enterKey = true;
+      editorMode = !editorMode;
+      alert(editorMode ? "Editor Mode is: on" : "Editor Mode is: off");
+      console.log(boxHolder);
       break;
     case 32: //space
       keys.spaceKey = true;
+      break;
+    case 16: //shift
+      keys.shiftKey = true;
       break;
   }
 }
@@ -224,6 +237,9 @@ function onKeyUp(event) {
     case 32: //space
       keys.spaceKey = false;
       break;
+    case 16: //shift
+      keys.shiftKey = false;
+      break;
   }
 }
 
@@ -233,6 +249,52 @@ Object.prototype.getKeysByValue = function (value) {
   let keys = Object.keys(this);
   return keys.filter(key => this[key] === value);
 }
+
+let startBox = { x: 0, y: 0 };
+let endBox = { x: 0, y: 0 };
+let boxHolder = [];
+
+function getMousePosition(canvas, start, event) {
+  let x = event.clientX - objects.origin.posx;
+  let y = canvas.height - event.clientY - objects.origin.posy;
+  console.log("Coordinate x: " + x,
+    "Coordinate y: " + y);
+  if (start) {
+    startBox.x = x;
+    startBox.y = y;
+  } else {
+    endBox.x = x;
+    endBox.y = y;
+    if (editorMode) {
+      boxHolder.push(
+        {
+          "width": Math.abs(endBox.x - startBox.x),
+          "height": Math.abs(endBox.y - startBox.y),
+          "initPosx": Math.min(startBox.x, endBox.x),
+          "initPosy": Math.min(startBox.y, endBox.y),
+          "styles": keys.shiftKey ? ["draw", "#2370db"] : ["draw", "#f370db"],
+          "types": keys.shiftKey ? ["ladder"] : ["solid"]
+        }
+      );
+      new entity(
+        boxHolder.at(-1)["width"],
+        boxHolder.at(-1)["height"],
+        boxHolder.at(-1)["initPosx"] + objects.origin.posx,
+        boxHolder.at(-1)["initPosy"] + objects.origin.posy,
+        boxHolder.at(-1)["styles"],
+        boxHolder.at(-1)["types"]
+      );
+    }
+  }
+}
+
+canvas.addEventListener("mousedown", function (e) {
+  getMousePosition(canvas, true, e);
+});
+
+canvas.addEventListener("mouseup", function (e) {
+  getMousePosition(canvas, false, e);
+});
 
 
 // * FUNCTIONS --------------------------------------------------------
@@ -254,6 +316,7 @@ function frameUpdate() {
   for (let i = 0; i < objects.frozen.length; i++) {
     objects.frozen[i].draw();
   }
+  objects.player.draw();
 }
 
 function animate(entity) {
@@ -272,7 +335,7 @@ function switchAnimation(entity, animationID, animationSpeed = config.defaultAni
   entity.sy = spriteSheets[entity.imgLink][entity.animation]["sy"];
   entity.sWidth = spriteSheets[entity.imgLink][entity.animation]["sWidth"];
   entity.sHeight = spriteSheets[entity.imgLink][entity.animation]["sHeight"];
-  
+
 }
 
 function playerMovementGravity(player) {
@@ -294,10 +357,10 @@ function playerMovementGravity(player) {
   }
 
   keysDown = keys.getKeysByValue(true);
-  if (keysDown.length > 0 && player.touchedGround) { 
-    switchAnimation(player, 'walk'); 
-  } else if (keysDown.length == 0 && player.touchedGround) { 
-    switchAnimation(player, 'idle'); 
+  if (keysDown.length > 0 && player.touchedGround) {
+    switchAnimation(player, 'walk');
+  } else if (keysDown.length == 0 && player.touchedGround) {
+    switchAnimation(player, 'idle');
   } else if (!player.touchedGround) {
     switchAnimation(player, 'jump', 6);
   }
@@ -330,6 +393,7 @@ function playerMovementGravity(player) {
     }
   }
   detectCollision(player, objects.solids);
+  detectCollision(player, objects.ladders);
   player.height = player.crouched ? player.initHeight / 2 : player.initHeight;
 }
 
@@ -343,95 +407,114 @@ let detectCollision = function (entity, checkArray = []) {
     borderRight: false,
     borderLeft: false,
   };
-
-  for (let i = 0; i < checkArray.length; i++) {
-    if (
-      entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > checkArray[i].posx &&
-      entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
-      entity.posy + entity.height - splitHitBoxOffset > checkArray[i].posy &&
-      entity.posy + splitHitBoxOffset < checkArray[i].posy + checkArray[i].height
-    ) {
-      if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
-      if (checkArray[i].mainType == 'borderWallLeft') { collision.borderLeft = true; }
-      entity.posx = checkArray[i].posx + checkArray[i].width + (entity.moveValues.x * entity.moveValues.amount * -1);
-      collision.left = true;
-      // console.log('left');
+  if (checkArray == objects.ladders) {
+    for (let i = 0; i < checkArray.length; i++) {
+      if (
+        (
+          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > checkArray[i].posx &&
+          entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
+          entity.posy + entity.height > checkArray[i].posy &&
+          entity.posy < checkArray[i].posy + checkArray[i].height
+        ) || (
+          entity.posx + entity.width > checkArray[i].currentPosx &&
+          entity.posx < checkArray[i].currentPosx + checkArray[i].width &&
+          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= checkArray[i].posy &&
+          entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= checkArray[i].posy + checkArray[i].height
+        )
+      ) {
+        entity.moveValues.y = 1;
+      }
     }
+  } else {
+    for (let i = 0; i < checkArray.length; i++) {
+      if (
+        entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > checkArray[i].posx &&
+        entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
+        entity.posy + entity.height - splitHitBoxOffset > checkArray[i].posy &&
+        entity.posy + splitHitBoxOffset < checkArray[i].posy + checkArray[i].height
+      ) {
+        if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
+        if (checkArray[i].mainType == 'borderWallLeft') { collision.borderLeft = true; }
+        entity.posx = checkArray[i].posx + checkArray[i].width + (entity.moveValues.x * entity.moveValues.amount * -1);
+        collision.left = true;
+        // console.log('left');
+      }
 
-    if (
-      entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > checkArray[i].posx &&
-      entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
-      entity.posy + entity.height - splitHitBoxOffset > checkArray[i].posy &&
-      entity.posy + splitHitBoxOffset < checkArray[i].posy + checkArray[i].height
-    ) {
-      if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
-      if (checkArray[i].mainType == 'borderWallRight') { collision.borderRight = true; }
-      entity.posx = checkArray[i].posx - entity.width + (entity.moveValues.x * entity.moveValues.amount * -1);
-      collision.right = true;
-      // console.log('right');
-    }
+      if (
+        entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > checkArray[i].posx &&
+        entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
+        entity.posy + entity.height - splitHitBoxOffset > checkArray[i].posy &&
+        entity.posy + splitHitBoxOffset < checkArray[i].posy + checkArray[i].height
+      ) {
+        if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
+        if (checkArray[i].mainType == 'borderWallRight') { collision.borderRight = true; }
+        entity.posx = checkArray[i].posx - entity.width + (entity.moveValues.x * entity.moveValues.amount * -1);
+        collision.right = true;
+        // console.log('right');
+      }
 
-    if (
-      entity.posx + entity.width - splitHitBoxOffset > checkArray[i].posx &&
-      entity.posx + splitHitBoxOffset < checkArray[i].posx + checkArray[i].width &&
-      entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) >= checkArray[i].posy &&
-      entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= checkArray[i].posy + checkArray[i].height
-    ) {
-      if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
-      if (checkArray[i].mainType == 'borderWallBottom') { collision.borderBottom = true; }
-      if (entity == objects.player) { entity.touchedGround = true; }
-      entity.posy = checkArray[i].posy + checkArray[i].height + (entity.moveValues.y * entity.moveValues.amount * -1);
-      collision.bottom = true;
-    }
-
-    if (
-      entity.posx + entity.width - splitHitBoxOffset > checkArray[i].posx &&
-      entity.posx + splitHitBoxOffset < checkArray[i].posx + checkArray[i].width &&
-      entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= checkArray[i].posy &&
-      entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) <= checkArray[i].posy + checkArray[i].height
-    ) {
-      if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
-      if (checkArray[i].mainType == 'borderWallTop') { collision.borderTop = true; }
-      entity.posy = checkArray[i].posy - entity.height;
-      entity.moveValues.y = 0;
-      collision.top = true;
-      // console.log('top');
-    }
-
-    if (entity == objects.player) {
       if (
         entity.posx + entity.width - splitHitBoxOffset > checkArray[i].posx &&
         entity.posx + splitHitBoxOffset < checkArray[i].posx + checkArray[i].width &&
-        entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.initHeight >= checkArray[i].posy &&
-        entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.initHeight / 2) <= checkArray[i].posy + checkArray[i].height
+        entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) >= checkArray[i].posy &&
+        entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= checkArray[i].posy + checkArray[i].height
+      ) {
+        if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
+        if (checkArray[i].mainType == 'borderWallBottom') { collision.borderBottom = true; }
+        if (entity == objects.player) { entity.touchedGround = true; }
+        entity.posy = checkArray[i].posy + checkArray[i].height + (entity.moveValues.y * entity.moveValues.amount * -1);
+        collision.bottom = true;
+      }
+
+      if (
+        entity.posx + entity.width - splitHitBoxOffset > checkArray[i].posx &&
+        entity.posx + splitHitBoxOffset < checkArray[i].posx + checkArray[i].width &&
+        entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= checkArray[i].posy &&
+        entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) <= checkArray[i].posy + checkArray[i].height
       ) {
         if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
         if (checkArray[i].mainType == 'borderWallTop') { collision.borderTop = true; }
-        entity.crouched = true;
+        entity.posy = checkArray[i].posy - entity.height;
+        entity.moveValues.y = 0;
+        collision.top = true;
+        // console.log('top');
+      }
+
+      if (entity == objects.player) {
+        if (
+          entity.posx + entity.width - splitHitBoxOffset > checkArray[i].posx &&
+          entity.posx + splitHitBoxOffset < checkArray[i].posx + checkArray[i].width &&
+          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.initHeight >= checkArray[i].posy &&
+          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.initHeight / 2) <= checkArray[i].posy + checkArray[i].height
+        ) {
+          if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
+          if (checkArray[i].mainType == 'borderWallTop') { collision.borderTop = true; }
+          entity.crouched = true;
+        }
       }
     }
-  }
-  // if (
-  //   entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > checkArray[i].posx &&
-  //   entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
-  //   entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) >= checkArray[i].posy &&
-  //   entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= checkArray[i].posy + checkArray[i].height
-  // ) {
-  //   console.log('help');
-  // }
-  if (entity == objects.player) {
-    scrollOffset.x = scrollOffset.y = 0;
-    if (collision.borderLeft) {
-      scrollOffset.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
-    }
-    if (collision.borderRight) {
-      scrollOffset.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
-    }
-    if (collision.borderTop) {
-      scrollOffset.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1;
-    }
-    if (collision.borderBottom) {
-      scrollOffset.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1;
+    // if (
+    //   entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > checkArray[i].posx &&
+    //   entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
+    //   entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) >= checkArray[i].posy &&
+    //   entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= checkArray[i].posy + checkArray[i].height
+    // ) {
+    //   console.log('help');
+    // }
+    if (entity == objects.player) {
+      scrollOffsetAdjustment.x = scrollOffsetAdjustment.y = 0;
+      if (collision.borderLeft) {
+        scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
+      }
+      if (collision.borderRight) {
+        scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
+      }
+      if (collision.borderTop) {
+        scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1;
+      }
+      if (collision.borderBottom) {
+        scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1;
+      }
     }
   }
 
@@ -442,6 +525,7 @@ let detectCollision = function (entity, checkArray = []) {
 makePlayer = function () {
   console.log('makePlayer');
 
+  objects.origin = new entity(0, 0, 0, 0, ["draw", "#f370db"], ["solid"]);
   new entity(100, 200, canvas.width / 2, canvas.height / 2, ['img', 'player'], ['player']);
   // new entity(canvas.width, canvas.height, 0, 0, ['draw', 'rgba(0,0,0,0)'], ['onScreenDetection', 'frozen']);
 
