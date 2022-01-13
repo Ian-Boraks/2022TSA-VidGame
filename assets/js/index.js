@@ -585,7 +585,7 @@ makeBorder = function () {
 
   // new entity(canvas.width, borderThickness, 0, 0, ['draw', borderColor], ['borderWallBottom', 'solid', 'frozen']);
   // new entity(canvas.width, borderThickness, 0, canvas.height - borderThickness, ['draw', borderColor], ['borderWallTop', 'solid', 'frozen']);
-  new entity(borderThickness, canvas.height, 0, 0, ['draw', borderColor], ['borderWallLeft', 'solid', 'frozen']);
+  new entity(borderThickness, canvas.height + 1000, 0, 0, ['draw', borderColor], ['borderWallLeft', 'solid', 'frozen']);
   new entity(borderThickness, canvas.height, canvas.width - borderThickness, 0, ['draw', borderColor], ['borderWallRight', 'solid', 'frozen']);
 
   makeBorder = noop();
