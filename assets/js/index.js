@@ -395,11 +395,11 @@ function playerMovementGravity(player) {
 
   keysDown = keys.getKeysByValue(true);
   if (keysDown.length > 0 && player.touchedGround) {
-    switchAnimation(player, 'walk');
+    switchAnimation(player, 'walk', 5);
   } else if (keysDown.length == 0 && player.touchedGround) {
     switchAnimation(player, 'idle');
   } else if (!player.touchedGround) {
-    switchAnimation(player, 'jump', 6);
+    switchAnimation(player, 'jump');
   }
   if (!keys.sKey) { player.crouched = false; }
 
@@ -562,7 +562,7 @@ let detectCollision = function (entity, checkArray = []) {
 makePlayer = function () {
   console.log('makePlayer');
 
-  objects.origin = new entity(0, 0, 0, 0, ["draw", "#f370db"], ["solid"]);
+  objects.origin = new entity(0, 0, 0, 0, ["draw", "rgba(0,0,0,0)"], ["solid"]);
   new entity(100, 200, canvas.width / 2, canvas.height / 2, ['img', 'player'], ['player']);
   // new entity(canvas.width, canvas.height, 0, 0, ['draw', 'rgba(0,0,0,0)'], ['onScreenDetection', 'frozen']);
 
