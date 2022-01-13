@@ -47,6 +47,7 @@ let keys = {
 };
 
 let lastMove = [];
+let lastPos = [];
 
 
 // * ON LOAD --------------------------------------------------------
@@ -339,6 +340,7 @@ function noop() { /* No operation function */ }
 
 function frameUpdate() {
   context.clearRect(0, 0, canvas.width, canvas.height);
+  lastPos = [objects.player.posx, objects.player.posy];
   if (config.gravityEnabled) { playerMovementGravity(objects.player); } else { playerMovementNoGravity(objects.player); }
   if (animationRunDelayCounter <= animationRunDelay) { animationRunDelayCounter++; } else { animationRunDelayCounter = 0; }
   if (animationRunDelayCounter == animationRunDelay) {
@@ -352,6 +354,11 @@ function frameUpdate() {
   }
   for (let i = 0; i < objects.frozen.length; i++) {
     objects.frozen[i].draw();
+  }
+  if (Math.abs(lastPos[0] - objects.player.posx) > 20 || Math.abs(lastPos[1] - objects.player.posy) > 20) {
+    console.log("Player moved too fast");
+    objects.player.posx = lastPos[0];
+    objects.player.posy = lastPos[1];
   }
   objects.player.draw();
 }

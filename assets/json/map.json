@@ -1,10 +1,92 @@
 {
-  "init": [
-    {"width": 120, "height": 120, "initPosx": 600, "initPosy": 0, "styles": ["draw", "#f370db"], "types": ["solid"]},
-    {"width": 120, "height": 20, "initPosx": 800, "initPosy": 140, "styles": ["draw", "#f370db"], "types": ["solid"]},
-    {"width": 120, "height": 20, "initPosx": 1000, "initPosy": 240, "styles": ["draw", "#f370db"], "types": ["solid"]},
-    {"width": 120, "height": 20, "initPosx": 1400, "initPosy": 120, "styles": ["draw", "#f370db"], "types": ["solid"]},
-    {"width": 1000000, "height": 40, "initPosx": 0, "initPosy": 0, "styles": ["draw", "#92d03b"], "types": ["solid"]},
-    {"width": 120, "height": 10000, "initPosx": -80, "initPosy": -10, "styles": ["draw", "#92d03b"], "types": ["solid"]}
-  ]
+	"init": [
+		{
+			"width": 120,
+			"height": 120,
+			"initPosx": 600,
+			"initPosy": 0,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 120,
+			"height": 20,
+			"initPosx": 800,
+			"initPosy": 140,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 120,
+			"height": 20,
+			"initPosx": 1000,
+			"initPosy": 240,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 120,
+			"height": 20,
+			"initPosx": 1400,
+			"initPosy": 120,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 1000000,
+			"height": 40,
+			"initPosx": 0,
+			"initPosy": 0,
+			"styles": ["draw", "#92d03b"],
+			"types": ["solid"]
+		},
+		{
+			"width": 120,
+			"height": 10000,
+			"initPosx": -80,
+			"initPosy": -10,
+			"styles": ["draw", "#92d03b"],
+			"types": ["solid"]
+		},
+		{
+			"width": 131,
+			"height": 510,
+			"initPosx": 1969.8000000000002,
+			"initPosy": 21,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 15,
+			"height": 498,
+			"initPosx": 1962.8000000000002,
+			"initPosy": 24,
+			"styles": ["draw", "#2370db"],
+			"types": ["ladder"]
+		},
+		{
+			"width": 84,
+			"height": 216,
+			"initPosx": 2402.8,
+			"initPosy": 37,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 26,
+			"height": 196,
+			"initPosx": 2481.8,
+			"initPosy": 39,
+			"styles": ["draw", "#2370db"],
+			"types": ["ladder"]
+		},
+		{
+			"width": 125,
+			"height": 98,
+			"initPosx": 2199.8,
+			"initPosy": 296,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		}
+	]
 }
