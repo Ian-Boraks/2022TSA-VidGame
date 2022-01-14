@@ -6,6 +6,8 @@ const config = {
   scrollDistance: 300,
   borderThickness: 120,
   defaultAnimationRunDelay: 1,
+  defWidth: 1920,
+  defHeight: 1080
 }
 
 let editorMode = false;
@@ -17,6 +19,7 @@ let map = {};
 let spriteSheets = {};
 let animationRunDelay = config.defaultAnimationRunDelay;
 let animationRunDelayCounter = 0;
+let playerDirection = "right";
 
 let objects = {
   player: null,
@@ -53,6 +56,21 @@ let lastPos = [];
 // * ON LOAD --------------------------------------------------------
 alert("To use the editor, press enter.\nEditor controls:\nClick+Drag to make solid\nShift+Click+Drag to make ladder\nHold Z and then press ctrl to remove last solid\nHold X and then press ctrl to remove last ladder\nPress enter again to exit and to have map changes output to console\n\n\nGame Controls:\nSpace to jump\nA to move left\nD to move right\nS to crouch");
 
+const canvas = document.getElementById("game-canvas");
+
+const context = canvas.getContext("2d");
+
+function resizeEventHandler() {
+  // get the max size that fits both width and height by finding the min scale
+  var canvasScale = Math.min(innerWidth / config.defWidth, innerHeight / config.defHeight);
+  // or for max size that fills
+  // canvasScale = Math.max(innerWidth / defWidth, innerHeight / defHeight);
+
+  // now set canvas size and resolution to the new scale
+  canvas.style.width = (canvas.width = Math.floor(config.defWidth * canvasScale)) + "px";
+  canvas.style.height = (canvas.height = Math.floor(config.defHeight * canvasScale)) + "px";
+}
+
 $.getJSON(
   {
     async: false,
@@ -75,14 +93,6 @@ $.getJSON(
   }
 )
 
-const canvas = document.getElementById("game-canvas");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-const context = canvas.getContext("2d");
-context.translate(0, canvas.height);
-context.scale(1, -1);
-
 window.addEventListener('DOMContentLoaded', function () {
   // ! This is an example of how to use the sound function
   // ! Now when you click the screen the funny sound will play
@@ -91,6 +101,9 @@ window.addEventListener('DOMContentLoaded', function () {
   //   playSound('trombone');
   // });
   testScript();
+  resizeEventHandler();
+  context.translate(0, canvas.height);
+  context.scale(1, -1);
 });
 
 window.addEventListener("keydown", onKeyDown, false);
@@ -121,7 +134,8 @@ class entity {
         this.imgLink = styles[1];
         this.img = new Image();
         this.img.src = spriteSheets[styles[1]]["img"];
-        this.animation = "idle";
+        this.animation = styles[2];
+        console.log(styles[2]);
         this.sx = spriteSheets[styles[1]][this.animation]["sx"];
         this.sy = spriteSheets[styles[1]][this.animation]["sy"];
         this.sWidth = spriteSheets[styles[1]][this.animation]["sWidth"];
@@ -401,9 +415,15 @@ function playerMovementGravity(player) {
   }
 
   keysDown = keys.getKeysByValue(true);
-  if (keysDown.length > 0 && player.touchedGround) {
-    switchAnimation(player, 'walk', 5);
-  } else if (keysDown.length == 0 && player.touchedGround) {
+  if (keysDown.length == 0 && player.touchedGround) {
+    switch (playerDirection) {
+      case "right":
+        switchAnimation(player, "idleR");
+        break;
+      case "left":
+        switchAnimation(player, "idleL");
+        break;
+    }
     switchAnimation(player, 'idle');
   } else if (!player.touchedGround) {
     switchAnimation(player, 'jump');
@@ -414,16 +434,16 @@ function playerMovementGravity(player) {
     switch (keysDown[i]) {
       case 'dKey':
         moveValues.x = 1;
+        if (player.touchedGround) { switchAnimation(player, 'walkR'); }
+        playerDirection = 'right';
         break;
       case 'sKey':
         player.crouched = true;
         break;
       case 'aKey':
         moveValues.x = -1;
-        break;
-      case 'wKey':
-        break;
-      case 'enterKey':
+        if (player.touchedGround) { switchAnimation(player, 'walkL'); }
+        playerDirection = 'left';
         break;
       case 'spaceKey':
         if (player.touchedGround) {
@@ -570,7 +590,7 @@ makePlayer = function () {
   console.log('makePlayer');
 
   objects.origin = new entity(0, 0, 0, 0, ["draw", "rgba(0,0,0,0)"], ["solid"]);
-  new entity(100, 200, canvas.width / 2, canvas.height / 2, ['img', 'player'], ['player']);
+  new entity(100, 200, canvas.width / 2, canvas.height / 2, ['img', 'player', 'idleR'], ['player']);
   // new entity(canvas.width, canvas.height, 0, 0, ['draw', 'rgba(0,0,0,0)'], ['onScreenDetection', 'frozen']);
 
   makePlayer = noop();
