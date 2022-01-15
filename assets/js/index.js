@@ -28,7 +28,7 @@ let objects = {
   origin: null,
   img: [],
   solids: [],
-  ladders: [],
+  ladders: [], // FIXME: Ladders can phase you through the ground
   slopes: [],
   frozen: [],
   nonFrozen: [],
@@ -252,7 +252,13 @@ function onKeyDown(event) {
   switch (keyCode) {
     case 68: //d
       keys.dKey = true;
-      if (!backgroundMusicPlaying) { playBackgroundMusic(); }
+      if (!backgroundMusicPlaying) {
+        let startSong = Math.floor(Math.random() * 3);
+        if (startSong == 0) { playSound('backgroundMusic'); }
+        else if (startSong == 1) { playSound('backgroundMusic1'); }
+        else if (startSong == 2) { playSound('backgroundMusic2'); }
+        backgroundMusicPlaying = true;
+      }
       break;
     case 83: //s
       keys.sKey = true;
@@ -400,13 +406,6 @@ canvas.addEventListener("mouseup", function (e) {
 
 // * FUNCTIONS --------------------------------------------------------
 function noop() { /* No operation function */ }
-
-var playBackgroundMusic = function () {
-  playSound('backgroundMusic');
-  backgroundMusicPlaying = true;
-  playBackgroundMusic = noop();
-}
-
 
 function frameUpdate() {
   context.clearRect(0, 0, canvas.width, canvas.height);
