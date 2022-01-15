@@ -146,13 +146,13 @@ soundManager.onready(function () {
     id: 'backgroundMusic1',
     url: '/assets/sound/CHIPTUNE_Minstrel_Dance.mp3',
     autoLoad: true,
-    onfinish: function () { playSound('backgroundMusic2'); }
+    onfinish: function () { setTimeout(() => { playSound('backgroundMusic2'); }, 2000) }
   });
   soundManager.createSound({
     id: 'backgroundMusic2',
     url: '/assets/sound/CHIPTUNE_The_Bards_Tale.mp3',
     autoLoad: true,
-    onfinish: function () { playSound('backgroundMusic'); }
+    onfinish: function () { setTimeout(() => { playSound('backgroundMusic'); }, 2000) }
   });
   soundManager.createSound({
     id: 'trombone',
@@ -401,7 +401,7 @@ canvas.addEventListener("mouseup", function (e) {
 // * FUNCTIONS --------------------------------------------------------
 function noop() { /* No operation function */ }
 
-var playBackgroundMusic = function() {
+var playBackgroundMusic = function () {
   playSound('backgroundMusic');
   backgroundMusicPlaying = true;
   playBackgroundMusic = noop();
