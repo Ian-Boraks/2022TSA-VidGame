@@ -1,5 +1,6 @@
 const config = {
   gravityEnabled: true,
+  debugMode: true,
   gravity: .1,
   jumpHeight: 2,
   defaultPlayerSpeed: 7,
@@ -214,9 +215,9 @@ class entity {
         context.fillStyle = this.color;
         context.fill();
         context.closePath();
-        context.font = "60px Arial";
-        context.fillStyle = "#0095DD";
-        context.fillText("Score: " + 2, 100, 200);
+        // context.font = "60px Arial";
+        // context.fillStyle = "#0095DD";
+        // context.fillText("Score: " + 2, 100, 200);
         break;
       default:
         console.log('Error: entity style not found (draw)');
@@ -472,13 +473,14 @@ function playerMovementGravity(player) {
 
   let collision = detectCollision(player, objects.solids, false);
   if (keys.spaceKey && !player.touchedGround && (!collision.borderLeft && !collision.borderRight)) {
-    if (collision.left) {
+    player.touchedGround = false;
+    if (collision.left && keys.aKey) {
       player.touchedGround = true;
-      moveValues.x = 2;
+      moveValues.x = 1.5;
       keys.aKey = false;
-    } else if (collision.right) {
+    } else if (collision.right && keys.dKey) {
       player.touchedGround = true;
-      moveValues.x = -2;
+      moveValues.x = -1.5;
       keys.dKey = false;
     }
   }
@@ -689,14 +691,13 @@ makePlayer = function () {
     new entity(100, 200, 310, 310, ['img', 'player', 'idleR'], ['player']);
   }
   if (!objects.origin) {
-    objects.origin = new entity(10, 10, 0, 0, ["draw", "#23f"], ["solid"]);
+    objects.origin = new entity(10, 10, 0, 0, ["draw", config.debugMode ? "#23f" : "rgba(0, 0, 0, 0)"], ["solid"]);
   }
 }
 
 makeBorder = function () {
   let borderThickness = config.borderThickness;
-  // let borderColor = 'rgba(0, 0, 0, 0)';
-  let borderColor = 'rgba(255, 255, 255, 0.5)';
+  let borderColor = config.debugMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0)';
 
   new entity(canvas.width, borderThickness, 0, 0, ['draw', borderColor], ['borderWallBottom', 'border', 'solid', 'frozen']);
   new entity(canvas.width, borderThickness, 0, canvas.height - borderThickness, ['draw', borderColor], ['borderWallTop', 'border', 'solid', 'frozen']);
