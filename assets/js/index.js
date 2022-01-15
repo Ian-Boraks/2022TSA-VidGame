@@ -5,10 +5,10 @@ const config = {
   defaultPlayerSpeed: 7,
   configPlayerMaxSpeed: 20,
   scrollDistance: 300,
-  borderThickness: 200,
+  borderThickness: 300,
   defaultAnimationRunDelay: 1,
-  defWidth: 1920,
-  defHeight: 1080
+  defWidth: 2880,
+  defHeight: 1620
 }
 
 let editorMode = false;
@@ -64,20 +64,20 @@ const canvas = document.getElementById("game-canvas");
 const context = canvas.getContext("2d");
 
 window.addEventListener('resize', () => {
-    // get the max size that fits both width and height by finding the min scale
-    let canvasScale = Math.min(innerWidth / config.defWidth, innerHeight / config.defHeight);
-    // or for max size that fills
-    // let canvasScale = Math.max(innerWidth / config.defWidth, innerHeight / config.defHeight);
+  // get the max size that fits both width and height by finding the min scale
+  let canvasScale = Math.min(innerWidth / config.defWidth, innerHeight / config.defHeight);
+  // or for max size that fills
+  // let canvasScale = Math.max(innerWidth / config.defWidth, innerHeight / config.defHeight);
 
-    // now set canvas size and resolution to the new scale
-    canvas.style.width = (canvas.width = Math.floor(config.defWidth * canvasScale)) + "px";
-    canvas.style.height = (canvas.height = Math.floor(config.defHeight * canvasScale)) + "px";
+  // now set canvas size and resolution to the new scale
+  canvas.style.width = (canvas.width = Math.floor(config.defWidth * canvasScale)) + "px";
+  canvas.style.height = (canvas.height = Math.floor(config.defHeight * canvasScale)) + "px";
 
-    canvas.width = (config.defWidth > innerWidth) ? config.defWidth : innerWidth;
-    canvas.height = (config.defHeight > innerHeight) ? config.defHeight : innerHeight;
+  canvas.width = (config.defWidth > innerWidth) ? config.defWidth : innerWidth;
+  canvas.height = (config.defHeight > innerHeight) ? config.defHeight : innerHeight;
 
-    context.translate(0, canvas.height);
-    context.scale(1, -1);
+  context.translate(0, canvas.height);
+  context.scale(1, -1);
 
   if (objects.borders.length != 0) {
     objects.borders.forEach(
@@ -664,10 +664,12 @@ let detectCollision = function (entity, checkArray = [], moveEntity = true) {
 }
 
 makePlayer = function () {
-  new entity(100, 200, 200, 200, ['img', 'player', 'idleR'], ['player']);
-  objects.origin = new entity(10, 10, 0, 0, ["draw", "#23f"], ["solid"]);
-
-  makePlayer = noop();
+  if (!objects.player) {
+    new entity(100, 200, 310, 310, ['img', 'player', 'idleR'], ['player']);
+  }
+  if (!objects.origin) {
+    objects.origin = new entity(10, 10, 0, 0, ["draw", "#23f"], ["solid"]);
+  }
 }
 
 makeBorder = function () {
@@ -675,9 +677,9 @@ makeBorder = function () {
   let borderColor = 'rgba(0, 0, 0, 0)';
   // let borderColor = 'rgba(255, 255, 255, 0.5)';
 
-  new entity(canvas.width, borderThickness - 60, 0, 0, ['draw', borderColor], ['borderWallBottom', 'border', 'solid', 'frozen']);
-  new entity(canvas.width, borderThickness - 60, 0, canvas.height - borderThickness + 60, ['draw', borderColor], ['borderWallTop', 'border', 'solid', 'frozen']);
-  new entity(borderThickness, canvas.height, 0, 0, ['draw', borderColor], ['borderWallLeft', 'border', 'solid', 'frozen']);
+  new entity(canvas.width, borderThickness, 0, 0, ['draw', borderColor], ['borderWallBottom', 'border', 'solid', 'frozen']);
+  new entity(canvas.width, borderThickness, 0, canvas.height - borderThickness, ['draw', borderColor], ['borderWallTop', 'border', 'solid', 'frozen']);
+  new entity(borderThickness - 60, canvas.height, 0, 0, ['draw', borderColor], ['borderWallLeft', 'border', 'solid', 'frozen']);
   new entity(borderThickness, canvas.height, canvas.width - borderThickness, 0, ['draw', borderColor], ['borderWallRight', 'border', 'solid', 'frozen']);
   context.font = "16px Arial";
   context.fillStyle = "#0095DD";
@@ -685,6 +687,17 @@ makeBorder = function () {
 }
 
 function loadMap(mapID = "init") {
+  objects = {
+    player: null,
+    origin: null,
+    img: [],
+    solids: [],
+    ladders: [], // FIXME: Ladders can phase you through the ground
+    slopes: [],
+    frozen: [],
+    nonFrozen: [],
+    borders: [],
+  };
   let mapObjects = map[mapID]
   let length = Object.keys(mapObjects).length;
   for (let i = 0; i < length; i++) {
@@ -697,6 +710,8 @@ function loadMap(mapID = "init") {
       mapObjects[i]["types"]
     );
   }
+  makeBorder();
+  makePlayer();
 }
 
 function playSound(sound) {
@@ -707,7 +722,5 @@ function playSound(sound) {
 window.testScript = function () {
   console.log('test');
   loadMap();
-  makeBorder();
-  makePlayer();
   updateInterval = setInterval(frameUpdate, 16);
 }

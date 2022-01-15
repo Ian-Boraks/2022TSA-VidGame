@@ -16,5 +16,231 @@
 			"styles": ["draw", "#92d03b"],
 			"types": ["solid"]
 		}
+	],
+	"map1": [
+		{
+			"width": 1000000,
+			"height": 600,
+			"initPosx": -600,
+			"initPosy": -560,
+			"styles": ["draw", "#92d03b"],
+			"types": ["solid"]
+		},
+		{
+			"width": 600,
+			"height": 10000,
+			"initPosx": -500,
+			"initPosy": 0,
+			"styles": ["draw", "#92d03b"],
+			"types": ["solid"]
+		},
+		{
+			"width": 8.648648648648532,
+			"height": 280,
+			"initPosx": 1980.231531531534,
+			"initPosy": 46.58379172229607,
+			"styles": ["draw", "#2370db"],
+			"types": ["ladder"]
+		},
+		{
+			"width": 207.92722547108508,
+			"height": 1167,
+			"initPosx": 790.8681611435998,
+			"initPosy": 44.35999999999997,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 10.396361273554248,
+			"height": 813,
+			"initPosx": 776.3132553606238,
+			"initPosy": 398.35999999999996,
+			"styles": ["draw", "#2370db"],
+			"types": ["ladder"]
+		},
+		{
+			"width": 114.35997400909685,
+			"height": 130,
+			"initPosx": 554.8707602339181,
+			"initPosy": 44.35999999999997,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 0,
+			"height": 0,
+			"initPosx": 1381.2210611802925,
+			"initPosy": 890.0058132820019,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 322.28719948018215,
+			"height": 150,
+			"initPosx": 1386.5796621182585,
+			"initPosy": 885.9400000000003,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 189.19328641039533,
+			"height": 293.12800769971125,
+			"initPosx": 1793.71246345425,
+			"initPosy": 41.34346487006704,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 13.513806172171144,
+			"height": 86.27526467757463,
+			"initPosx": 1779.1591337303735,
+			"initPosy": 248.1962078922037,
+			"styles": ["draw", "#2370db"],
+			"types": ["ladder"]
+		},
+		{
+			"width": 180.83793439428382,
+			"height": 162,
+			"initPosx": 2177.8116401429033,
+			"initPosy": 283.73999999999967,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 501.9811627151671,
+			"height": 151.0000000000001,
+			"initPosx": 2086.3533744722313,
+			"initPosy": 887.7399999999997,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 168.36635271191926,
+			"height": 214,
+			"initPosx": 2725.5219356934067,
+			"initPosy": 418.73999999999967,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 25.98246183825904,
+			"height": 145,
+			"initPosx": 2696.4215784345565,
+			"initPosy": 488.73999999999967,
+			"styles": ["draw", "#2370db"],
+			"types": ["ladder"]
+		},
+		{
+			"width": 98.73335498538472,
+			"height": 1098,
+			"initPosx": 3104.865878531991,
+			"initPosy": 220.73999999999967,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 31.17895420591094,
+			"height": 1094,
+			"initPosx": 3071.608327379019,
+			"initPosy": 223.73999999999967,
+			"styles": ["draw", "#2370db"],
+			"types": ["ladder"]
+		},
+		{
+			"width": 315.9467359532314,
+			"height": 60,
+			"initPosx": 2889.731094511205,
+			"initPosy": 221.9699999999997,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 171.4842481325104,
+			"height": 199,
+			"initPosx": 2723.443338746346,
+			"initPosy": 217.9699999999997,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 482.2344917180899,
+			"height": 184,
+			"initPosx": 2724.1085027606377,
+			"initPosy": 37.969999999999686,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 29.10350801212644,
+			"height": 992.9999999999999,
+			"initPosx": 3201.644686011261,
+			"initPosy": 311.12999999999977,
+			"styles": ["draw", "#2370db"],
+			"types": ["ladder"]
+		},
+		{
+			"width": 246.34040710264208,
+			"height": 244.9999999999999,
+			"initPosx": 3542.571494153314,
+			"initPosy": 861.1299999999998,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 308.705067128627,
+			"height": 805,
+			"initPosx": 4155.823984408836,
+			"initPosy": 49.1299999999997,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 623.7816764132549,
+			"height": 150,
+			"initPosx": 5085.991020142951,
+			"initPosy": 699.1299999999997,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 10.396361273554248,
+			"height": 610,
+			"initPosx": 4462.209343729695,
+			"initPosy": 212.1299999999997,
+			"styles": ["draw", "#2370db"],
+			"types": ["ladder"]
+		},
+		{
+			"width": 130.9941520467837,
+			"height": 70,
+			"initPosx": 4950.838323586745,
+			"initPosy": 705.1299999999997,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 16.63417803768698,
+			"height": 67,
+			"initPosx": 4930.0456010396365,
+			"initPosy": 712.1299999999997,
+			"styles": ["draw", "#2370db"],
+			"types": ["ladder"]
+		},
+		{
+			"width": 946.0688758934375,
+			"height": 57,
+			"initPosx": 5709.772696556206,
+			"initPosy": 795.1299999999997,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		},
+		{
+			"width": 1063.5477582846006,
+			"height": 86,
+			"initPosx": 5574.620000000001,
+			"initPosy": 1039.1299999999997,
+			"styles": ["draw", "#f370db"],
+			"types": ["solid"]
+		}
 	]
 }
