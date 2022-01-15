@@ -15,7 +15,6 @@ let editorMode = false;
 let startBox = { x: 0, y: 0 };
 let endBox = { x: 0, y: 0 };
 let boxHolder = [];
-let canvasScale = 1;
 
 let map = {};
 let spriteSheets = {};
@@ -59,30 +58,26 @@ let backgroundMusicPlaying = false;
 
 
 // * ON LOAD --------------------------------------------------------
-// alert("To use the editor, press enter.\nEditor controls:\nClick+Drag to make solid\nShift+Click+Drag to make ladder\nHold Z and then press ctrl to remove last solid\nHold X and then press ctrl to remove last ladder\nPress enter again to exit and to have map changes output to console\n\n\nGame Controls:\nSpace to jump\nA to move left\nD to move right\nS to crouch");
+// alert("To use the editor, press enter.\nEditor controls:\nClick+Drag to make solid\nShift+Click+Drag to make ladder\nPress enter again to exit and to have map changes output to console\n\n\nGame Controls:\nSpace to jump\nA to move left\nD to move right\nS to crouch");
 
 const canvas = document.getElementById("game-canvas");
 const context = canvas.getContext("2d");
 
 window.addEventListener('resize', () => {
-  // get the max size that fits both width and height by finding the min scale
-  canvasScale = Math.min(innerWidth / config.defWidth, innerHeight / config.defHeight);
-  // or for max size that fills
-  // let canvasScale = Math.max(innerWidth / config.defWidth, innerHeight / config.defHeight);
+    // get the max size that fits both width and height by finding the min scale
+    let canvasScale = Math.min(innerWidth / config.defWidth, innerHeight / config.defHeight);
+    // or for max size that fills
+    // let canvasScale = Math.max(innerWidth / config.defWidth, innerHeight / config.defHeight);
 
-  // now set canvas size and resolution to the new scale
-  canvas.style.width = (canvas.width = Math.floor(config.defWidth * canvasScale)) + "px";
-  canvas.style.height = (canvas.height = Math.floor(config.defHeight * canvasScale)) + "px";
+    // now set canvas size and resolution to the new scale
+    canvas.style.width = (canvas.width = Math.floor(config.defWidth * canvasScale)) + "px";
+    canvas.style.height = (canvas.height = Math.floor(config.defHeight * canvasScale)) + "px";
 
-  canvas.width = (config.defWidth > innerWidth) ? config.defWidth : innerWidth;
-  canvas.height = (config.defHeight > innerHeight) ? config.defHeight : innerHeight;
+    canvas.width = (config.defWidth > innerWidth) ? config.defWidth : innerWidth;
+    canvas.height = (config.defHeight > innerHeight) ? config.defHeight : innerHeight;
 
-  context.translate(0, canvas.height);
-  if (config.defWidth > innerWidth && config.defHeight > innerHeight) {
+    context.translate(0, canvas.height);
     context.scale(1, -1);
-  } else {
-    context.scale(1, -1);
-  }
 
   if (objects.borders.length != 0) {
     objects.borders.forEach(
@@ -273,6 +268,7 @@ function onKeyDown(event) {
       keys.enterKey = true;
       editorMode = !editorMode;
       alert(editorMode ? "Editor Mode is: on" : "Editor Mode is: off");
+      window.dispatchEvent(new Event('resize'));
       console.log(boxHolder);
       break;
     case 32: //space
@@ -283,23 +279,15 @@ function onKeyDown(event) {
       break;
     case 90: //z
       keys.zKey = true;
-      break;
-    case 88: //x
-      keys.xKey = true;
-      break;
-    case 17: //ctrl
-      keys.ctrlKey = true;
-
       let length = boxHolder.length;
       if (editorMode && length > 0) {
-        if (keys.zKey && boxHolder[length - 1]['types'][0] == 'solid') {
+        if (keys.ctrlKey && boxHolder[length - 1]['types'][0] == 'solid') {
           boxHolder.pop();
           objects.solids.pop();
           objects.nonFrozen.pop();
           console.log('removed solid');
           break;
-        }
-        if (keys.xKey && boxHolder[length - 1]['types'][0] == 'ladder') {
+        } else if (keys.ctrlKey && boxHolder[length - 1]['types'][0] == 'ladder') {
           boxHolder.pop();
           objects.ladders.pop();
           objects.nonFrozen.pop();
@@ -308,6 +296,9 @@ function onKeyDown(event) {
         }
         console.log('Error: cannot remove non-solid or non-ladder');
       }
+      break;
+    case 17: //ctrl
+      keys.ctrlKey = true;
       break;
   }
 }
@@ -363,8 +354,8 @@ Object.prototype.filterArray = function (value) {
 }
 
 function getMousePosition(canvas, start, event) {
-  let x = (event.clientX - objects.origin.posx) / canvasScale;
-  let y = ($(document).height() - event.clientY - objects.origin.posy) / canvasScale;
+  const x = (event.clientX * canvas.width / canvas.clientWidth) - objects.origin.posx;
+  const y = ((innerHeight - event.clientY) * canvas.height / canvas.clientHeight) - objects.origin.posy;
   console.log("Coordinate x: " + x, "Coordinate y: " + y);
   if (start) {
     startBox.x = x;
@@ -673,8 +664,8 @@ let detectCollision = function (entity, checkArray = [], moveEntity = true) {
 }
 
 makePlayer = function () {
-  new entity(100, 200, canvas.width / 2, canvas.height / 2, ['img', 'player', 'idleR'], ['player']);
-  objects.origin = new entity(0, 0, 0, 0, ["draw", "rgba(0, 0, 0, 0)"], ["solid"]);
+  new entity(100, 200, 200, 200, ['img', 'player', 'idleR'], ['player']);
+  objects.origin = new entity(10, 10, 0, 0, ["draw", "#23f"], ["solid"]);
 
   makePlayer = noop();
 }
