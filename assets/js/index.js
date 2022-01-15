@@ -519,8 +519,6 @@ function playerMovementGravity(player) {
         break;
       case 'spaceKey':
         if (player.touchedGround) {
-          // TODO: Wall Jumps
-          // playSound('trombone');
           player.touchedGround = false;
           moveValues.y = config.jumpHeight;
         }
@@ -535,7 +533,6 @@ function playerMovementGravity(player) {
 
 let detectCollision = function (entity, checkArray = [], moveEntity = true) {
   // TODO: Remove depreciated STOPWALL & FLOOR collision detection
-  // FIXME: 
   let splitHitBoxOffset = 3;
   let collision = {
     ladder: false,
@@ -713,8 +710,7 @@ function loadMap(mapID = "init") {
     origin: null,
     img: [],
     solids: [],
-    ladders: [], // FIXME: Ladders can phase you through the ground
-    slopes: [],
+    ladders: [],
     frozen: [],
     nonFrozen: [],
     borders: [],
