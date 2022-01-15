@@ -55,6 +55,8 @@ let keys = {
 let lastMove = [];
 let lastPos = [];
 
+let backgroundMusicPlaying = false;
+
 
 // * ON LOAD --------------------------------------------------------
 // alert("To use the editor, press enter.\nEditor controls:\nClick+Drag to make solid\nShift+Click+Drag to make ladder\nHold Z and then press ctrl to remove last solid\nHold X and then press ctrl to remove last ladder\nPress enter again to exit and to have map changes output to console\n\n\nGame Controls:\nSpace to jump\nA to move left\nD to move right\nS to crouch");
@@ -133,6 +135,25 @@ window.addEventListener("keyup", onKeyUp, false);
 
 soundManager.onready(function () {
   // ! All sound effects need to be loaded with this function before they can be played
+  // Music: https://www.chosic.com/free-music/all/ 
+  soundManager.createSound({
+    id: 'backgroundMusic',
+    url: '/assets/sound/CHIPTUNE_The_Old_Tower_Inn.mp3',
+    autoLoad: true,
+    onfinish: function () { playSound('backgroundMusic1'); }
+  });
+  soundManager.createSound({
+    id: 'backgroundMusic1',
+    url: '/assets/sound/CHIPTUNE_Minstrel_Dance.mp3',
+    autoLoad: true,
+    onfinish: function () { playSound('backgroundMusic2'); }
+  });
+  soundManager.createSound({
+    id: 'backgroundMusic2',
+    url: '/assets/sound/CHIPTUNE_The_Bards_Tale.mp3',
+    autoLoad: true,
+    onfinish: function () { playSound('backgroundMusic'); }
+  });
   soundManager.createSound({
     id: 'trombone',
     url: '/assets/sound/FX68GWY-funny-trombone-slide-accent.mp3'
@@ -231,6 +252,7 @@ function onKeyDown(event) {
   switch (keyCode) {
     case 68: //d
       keys.dKey = true;
+      if (!backgroundMusicPlaying) { playBackgroundMusic(); }
       break;
     case 83: //s
       keys.sKey = true;
@@ -378,6 +400,13 @@ canvas.addEventListener("mouseup", function (e) {
 
 // * FUNCTIONS --------------------------------------------------------
 function noop() { /* No operation function */ }
+
+var playBackgroundMusic = function() {
+  playSound('backgroundMusic');
+  backgroundMusicPlaying = true;
+  playBackgroundMusic = noop();
+}
+
 
 function frameUpdate() {
   context.clearRect(0, 0, canvas.width, canvas.height);
