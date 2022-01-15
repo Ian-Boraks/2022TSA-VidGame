@@ -51,16 +51,16 @@
 		{
 			"width": 131,
 			"height": 510,
-			"initPosx": 1969.8000000000002,
-			"initPosy": 21,
+			"initPosx": 1940,
+			"initPosy": 40,
 			"styles": ["draw", "#f370db"],
 			"types": ["solid"]
 		},
 		{
 			"width": 15,
 			"height": 498,
-			"initPosx": 1962.8000000000002,
-			"initPosy": 24,
+			"initPosx": 1930,
+			"initPosy": 40,
 			"styles": ["draw", "#2370db"],
 			"types": ["ladder"]
 		},

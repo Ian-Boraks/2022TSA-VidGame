@@ -336,7 +336,7 @@ Object.prototype.filterArray = function (value) {
 
 function getMousePosition(canvas, start, event) {
   let x = (event.clientX - objects.origin.posx) / canvasScale;
-  let y = ($(document).height()  - event.clientY - objects.origin.posy) / canvasScale;
+  let y = ($(document).height() - event.clientY - objects.origin.posy) / canvasScale;
   console.log("Coordinate x: " + x, "Coordinate y: " + y);
   if (start) {
     startBox.x = x;
@@ -402,10 +402,10 @@ function frameUpdate() {
     objects.player.posy = lastPos[1];
     let collision = detectCollision(objects.player, objects.solids, false);
     if (collision.bottom) {
-      objects.player.posy = lastPos[1] + 10;
+      objects.player.posy = lastPos[1] + 4;
     }
     if (collision.top) {
-      objects.player.posy = lastPos[1] - 10;
+      objects.player.posy = lastPos[1] - 4;
     }
   }
   objects.player.draw();
@@ -459,7 +459,14 @@ function playerMovementGravity(player) {
         break;
     }
   } else if (!player.touchedGround) {
-    switchAnimation(player, 'jump');
+    switch (playerDirection) {
+      case "right":
+        switchAnimation(player, "jumpR");
+        break;
+      case "left":
+        switchAnimation(player, "jumpL");
+        break;
+    }
   }
   if (!keys.sKey) { player.crouched = false; }
 
@@ -467,7 +474,7 @@ function playerMovementGravity(player) {
     switch (keysDown[i]) {
       case 'dKey':
         moveValues.x = 1;
-        if (player.touchedGround) { switchAnimation(player, 'walkR'); }
+        if (player.touchedGround) { switchAnimation(player, 'walkR', 2); }
         playerDirection = 'right';
         break;
       case 'sKey':
@@ -475,7 +482,7 @@ function playerMovementGravity(player) {
         break;
       case 'aKey':
         moveValues.x = -1;
-        if (player.touchedGround) { switchAnimation(player, 'walkL'); }
+        if (player.touchedGround) { switchAnimation(player, 'walkL', 2); }
         playerDirection = 'left';
         break;
       case 'spaceKey':
@@ -653,6 +660,9 @@ makeBorder = function () {
   new entity(canvas.width, borderThickness - 60, 0, canvas.height - borderThickness + 60, ['draw', borderColor], ['borderWallTop', 'border', 'solid', 'frozen']);
   new entity(borderThickness, canvas.height, 0, 0, ['draw', borderColor], ['borderWallLeft', 'border', 'solid', 'frozen']);
   new entity(borderThickness, canvas.height, canvas.width - borderThickness, 0, ['draw', borderColor], ['borderWallRight', 'border', 'solid', 'frozen']);
+  context.font = "16px Arial";
+  context.fillStyle = "#0095DD";
+  context.fillText("Score: " + 2, 100, 200);
 }
 
 function loadMap(mapID = "init") {
