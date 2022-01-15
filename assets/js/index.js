@@ -214,6 +214,9 @@ class entity {
         context.fillStyle = this.color;
         context.fill();
         context.closePath();
+        context.font = "60px Arial";
+        context.fillStyle = "#0095DD";
+        context.fillText("Score: " + 2, 100, 200);
         break;
       default:
         console.log('Error: entity style not found (draw)');
@@ -660,16 +663,16 @@ let detectCollision = function (entity, checkArray = [], moveEntity = true) {
         scrollOffsetAdjustment.x = scrollOffsetAdjustment.y = 0;
 
         if (collision.borderLeft) {
-          scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
+          scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1.1;
         }
         if (collision.borderRight) {
-          scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
+          scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1.1;
         }
         if (collision.borderTop) {
-          scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1;
+          scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1.1;
         }
         if (collision.borderBottom) {
-          scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1;
+          scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1.1;
         }
       }
     }
@@ -692,16 +695,13 @@ makePlayer = function () {
 
 makeBorder = function () {
   let borderThickness = config.borderThickness;
-  let borderColor = 'rgba(0, 0, 0, 0)';
-  // let borderColor = 'rgba(255, 255, 255, 0.5)';
+  // let borderColor = 'rgba(0, 0, 0, 0)';
+  let borderColor = 'rgba(255, 255, 255, 0.5)';
 
   new entity(canvas.width, borderThickness, 0, 0, ['draw', borderColor], ['borderWallBottom', 'border', 'solid', 'frozen']);
   new entity(canvas.width, borderThickness, 0, canvas.height - borderThickness, ['draw', borderColor], ['borderWallTop', 'border', 'solid', 'frozen']);
   new entity(borderThickness - 60, canvas.height, 0, 0, ['draw', borderColor], ['borderWallLeft', 'border', 'solid', 'frozen']);
   new entity(borderThickness + 150, canvas.height, canvas.width - borderThickness - 150, 0, ['draw', borderColor], ['borderWallRight', 'border', 'solid', 'frozen']);
-  context.font = "16px Arial";
-  context.fillStyle = "#0095DD";
-  context.fillText("Score: " + 2, 100, 200);
 }
 
 function loadMap(mapID = "init") {
