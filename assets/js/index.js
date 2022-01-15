@@ -467,6 +467,19 @@ function playerMovementGravity(player) {
     }
   }
 
+  let collision = detectCollision(player, objects.solids, false);
+  if (keys.spaceKey && !player.touchedGround && (!collision.borderLeft && !collision.borderRight)) {
+    if (collision.left) {
+      player.touchedGround = true;
+      moveValues.x = 2;
+      keys.aKey = false;
+    } else if (collision.right) {
+      player.touchedGround = true;
+      moveValues.x = -2;
+      keys.dKey = false;
+    }
+  }
+
   keysDown = keys.getKeysByValue(true);
   if (keysDown.length == 0 && player.touchedGround) {
     switch (playerDirection) {
@@ -526,6 +539,12 @@ let detectCollision = function (entity, checkArray = [], moveEntity = true) {
   let splitHitBoxOffset = 3;
   let collision = {
     ladder: false,
+
+    top: false,
+    bottom: false,
+    left: false,
+    right: false,
+
     borderTop: false,
     borderBottom: false,
     borderRight: false,
@@ -644,20 +663,22 @@ let detectCollision = function (entity, checkArray = [], moveEntity = true) {
         scrollOffsetAdjustment.x = scrollOffsetAdjustment.y = 0;
 
         if (collision.borderLeft) {
-          scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1.1;
+          scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
         }
         if (collision.borderRight) {
-          scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1.1;
+          scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1;
         }
         if (collision.borderTop) {
-          scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1.1;
+          scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1;
         }
         if (collision.borderBottom) {
-          scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1.1;
+          scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1;
         }
       }
     }
   }
+
+  collision.border = collision.borderLeft || collision.borderRight || collision.borderTop || collision.borderBottom;
 
   // console.log(collision);
   return collision;
@@ -680,7 +701,7 @@ makeBorder = function () {
   new entity(canvas.width, borderThickness, 0, 0, ['draw', borderColor], ['borderWallBottom', 'border', 'solid', 'frozen']);
   new entity(canvas.width, borderThickness, 0, canvas.height - borderThickness, ['draw', borderColor], ['borderWallTop', 'border', 'solid', 'frozen']);
   new entity(borderThickness - 60, canvas.height, 0, 0, ['draw', borderColor], ['borderWallLeft', 'border', 'solid', 'frozen']);
-  new entity(borderThickness, canvas.height, canvas.width - borderThickness, 0, ['draw', borderColor], ['borderWallRight', 'border', 'solid', 'frozen']);
+  new entity(borderThickness + 150, canvas.height, canvas.width - borderThickness - 150, 0, ['draw', borderColor], ['borderWallRight', 'border', 'solid', 'frozen']);
   context.font = "16px Arial";
   context.fillStyle = "#0095DD";
   context.fillText("Score: " + 2, 100, 200);
