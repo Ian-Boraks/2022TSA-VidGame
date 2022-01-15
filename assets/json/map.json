@@ -34,17 +34,17 @@
 		},
 		{
 			"width": 1000000,
-			"height": 40,
-			"initPosx": 0,
-			"initPosy": 0,
+			"height": 600,
+			"initPosx": -600,
+			"initPosy": -560,
 			"styles": ["draw", "#92d03b"],
 			"types": ["solid"]
 		},
 		{
-			"width": 120,
+			"width": 600,
 			"height": 10000,
-			"initPosx": -80,
-			"initPosy": -10,
+			"initPosx": -500,
+			"initPosy": 0,
 			"styles": ["draw", "#92d03b"],
 			"types": ["solid"]
 		},
