@@ -266,7 +266,7 @@ function onKeyDown(event) {
       }
       break;
     case 83: //s
-      keys.sKey = true;
+      keys.sKey[0] = true;
       break;
     case 65: //a
       if (keys.aKey[1]) { break; }
@@ -510,30 +510,6 @@ function playerMovementGravity(player) {
     moveValues.x = 0;
   }
 
-
-  // FIXME: Wall jumps sometimes allow the player to just zoom up walls and not actually jump
-  let collisionSolids = detectCollision(player, objects.solids, false);
-  let collisionLadders = detectCollision(player, objects.ladders, false);
-
-  if (keys.spaceKey && !player.touchedGround && (!collisionSolids.borderLeft && !collisionSolids.borderRight) && !collisionLadders.ladder) {
-    player.touchedGround = false;
-    if (collisionSolids.left && keys.aKey[0]) {
-      player.touchedGround = true;
-      moveValues.x = 1.5;
-      keys.aKey[0] = false;
-      wallJump = true;
-      playerDirection = "right";
-      scoreUpdate(1000);
-    } else if (collisionSolids.right && keys.dKey[0]) {
-      player.touchedGround = true;
-      moveValues.x = -1.5;
-      keys.dKey[0] = false;
-      wallJump = true;
-      playerDirection = "left";
-      scoreUpdate(1000);
-    }
-  }
-
   keysDown = keys.getKeysByValue(true);
   keysDown = keysDown.concat(keys.getKeysByValue([true, true]));
 
@@ -586,11 +562,35 @@ function playerMovementGravity(player) {
     }
   }
 
+  let collisionSolids = detectCollision(player, objects.solids);
+  let collisionLadders = detectCollision(player, objects.ladders);
+
+  if (
+    keys.spaceKey &&
+    !player.touchedGround &&
+    (!collisionSolids.borderLeft && !collisionSolids.borderRight) &&
+    !collisionLadders.ladder &&
+    !keys.sKey[0]
+  ) {
+    player.touchedGround = false;
+    if (collisionSolids.left && keys.aKey[0]) {
+      player.touchedGround = true;
+      moveValues.x = 1.5;
+      keys.aKey[0] = false;
+      wallJump = true;
+      playerDirection = "right";
+      scoreUpdate(1000);
+    } else if (collisionSolids.right && keys.dKey[0]) {
+      player.touchedGround = true;
+      moveValues.x = -1.5;
+      keys.dKey[0] = false;
+      wallJump = true;
+      playerDirection = "left";
+      scoreUpdate(1000);
+    }
+  }
   if (keys.aKey[1] && !wallJump && player.touchedGround) { keys.aKey[0] = true; }
   if (keys.dKey[1] && !wallJump && player.touchedGround) { keys.dKey[0] = true; }
-
-  detectCollision(player, objects.solids);
-  detectCollision(player, objects.ladders);
   player.height = player.crouched ? player.initHeight / 2 : player.initHeight;
 }
 
