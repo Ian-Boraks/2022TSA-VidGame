@@ -1,22 +1,6 @@
 {
 	"init": [
 		{
-			"width": 1000000,
-			"height": 600,
-			"initPosx": -600,
-			"initPosy": -560,
-			"styles": ["draw", "#92d03b"],
-			"types": ["solid"]
-		},
-		{
-			"width": 600,
-			"height": 10000,
-			"initPosx": -500,
-			"initPosy": 0,
-			"styles": ["draw", "#92d03b"],
-			"types": ["solid"]
-		},
-		{
 			"width": 99.79426096372481,
 			"height": 972.9355149181904,
 			"initPosx": 1185.329669734705,
@@ -50,22 +34,6 @@
 		}
 	],
 	"map1": [
-		{
-			"width": 1000000,
-			"height": 600,
-			"initPosx": -600,
-			"initPosy": -560,
-			"styles": ["draw", "#92d03b"],
-			"types": ["solid"]
-		},
-		{
-			"width": 600,
-			"height": 10000,
-			"initPosx": -500,
-			"initPosy": 0,
-			"styles": ["draw", "#92d03b"],
-			"types": ["solid"]
-		},
 		{
 			"width": 8.648648648648532,
 			"height": 280,

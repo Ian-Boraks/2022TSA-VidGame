@@ -45,24 +45,18 @@ let scrollOffsetTotal = {
   y: 0
 }
 
-let keys = {
-  dKey: false,
-  sKey: false,
-  aKey: false,
-  spaceKey: false,
-};
-
 let lastMove = [];
 let lastPos = [];
 
 let backgroundMusicPlaying = false;
+let score = 0;
 
 
 // * ON LOAD --------------------------------------------------------
 // alert("To use the editor, press enter.\nEditor controls:\nClick+Drag to make solid\nShift+Click+Drag to make ladder\nPress enter again to exit and to have map changes output to console\n\n\nGame Controls:\nSpace to jump\nA to move left\nD to move right\nS to crouch");
 
 const canvas = document.getElementById("game-canvas");
-const context = canvas.getContext("2d");
+const ctx = canvas.getContext("2d");
 
 window.addEventListener('resize', () => {
   // get the max size that fits both width and height by finding the min scale
@@ -77,8 +71,8 @@ window.addEventListener('resize', () => {
   canvas.width = (config.defWidth > innerWidth) ? config.defWidth : innerWidth;
   canvas.height = (config.defHeight > innerHeight) ? config.defHeight : innerHeight;
 
-  context.translate(0, canvas.height);
-  context.scale(1, -1);
+  ctx.translate(0, canvas.height);
+  ctx.scale(1, -1);
 
   if (objects.borders.length != 0) {
     objects.borders.forEach(
@@ -89,7 +83,8 @@ window.addEventListener('resize', () => {
         objects.solids = objects.solids.filterArray(border);
       }
     );
-    makeBorder();
+
+    makeDefaultEntities();
   }
 });
 
@@ -123,7 +118,7 @@ window.addEventListener('DOMContentLoaded', function () {
   //   playSound('trombone');
   // });
   window.dispatchEvent(new Event('resize'));
-  testScript();
+  startUp();
 });
 
 window.addEventListener("keydown", onKeyDown, false);
@@ -189,7 +184,6 @@ class entity {
     }
 
     if (types.indexOf('player') > -1) {
-      objects.player = this;
       this.crouched = false;
       this.touchedGround = false;
       this.lastPos = [undefined, undefined];
@@ -207,17 +201,14 @@ class entity {
   draw() {
     switch (this.style) {
       case 'img':
-        context.drawImage(this.img, this.sx, this.sy, this.sWidth, this.sHeight, this.posx, this.posy, this.width, this.height);
+        ctx.drawImage(this.img, this.sx, this.sy, this.sWidth, this.sHeight, this.posx, this.posy, this.width, this.height);
         break;
       case 'draw':
-        context.beginPath();
-        context.rect(this.posx, this.posy, this.width, this.height);
-        context.fillStyle = this.color;
-        context.fill();
-        context.closePath();
-        // context.font = "60px Arial";
-        // context.fillStyle = "#0095DD";
-        // context.fillText("Score: " + 2, 100, 200);
+        ctx.beginPath();
+        ctx.rect(this.posx, this.posy, this.width, this.height);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.closePath();
         break;
       default:
         console.log('Error: entity style not found (draw)');
@@ -246,11 +237,26 @@ class entity {
 }
 
 // * KEYBOARD CONTROLS ------------------------------------------------
+var keys = {
+  dKey: [false, false],
+  aKey: [false, false],
+  sKey: [false],
+  spaceKey: [false],
+  shiftKey: [false],
+  wKey: [false],
+  xKey: [false],
+  zKey: [false],
+  ctrlKey: [false],
+};
+
 function onKeyDown(event) {
   let keyCode = event.keyCode;
   switch (keyCode) {
     case 68: //d
-      keys.dKey = true;
+      if (keys.dKey[1]) { break; }
+      keys.dKey[0] = true;
+      keys.dKey[1] = true;
+
       if (!backgroundMusicPlaying) {
         let startSong = Math.floor(Math.random() * 3);
         if (startSong == 0) { playSound('backgroundMusic'); }
@@ -258,40 +264,44 @@ function onKeyDown(event) {
         else if (startSong == 2) { playSound('backgroundMusic2'); }
         backgroundMusicPlaying = true;
       }
+      console.log('d');
       break;
     case 83: //s
       keys.sKey = true;
       break;
     case 65: //a
-      keys.aKey = true;
+      if (keys.aKey[1]) { break; }
+      keys.aKey[0] = true;
+      keys.aKey[1] = true;
+      console.log('a');
       break;
     case 87: //w
-      keys.wKey = true;
+      keys.wKey[0] = true;
       break;
     case 13: //enter
-      keys.enterKey = true;
+      keys.enterKey[0] = true;
       editorMode = !editorMode;
       alert(editorMode ? "Editor Mode is: on" : "Editor Mode is: off");
       window.dispatchEvent(new Event('resize'));
       console.log(boxHolder);
       break;
     case 32: //space
-      keys.spaceKey = true;
+      keys.spaceKey[0] = true;
       break;
     case 16: //shift
-      keys.shiftKey = true;
+      keys.shiftKey[0] = true;
       break;
     case 90: //z
-      keys.zKey = true;
+      keys.zKey[0] = true;
       let length = boxHolder.length;
       if (editorMode && length > 0) {
-        if (keys.ctrlKey && boxHolder[length - 1]['types'][0] == 'solid') {
+        if (keys.ctrlKey[0] && boxHolder[length - 1]['types'][0] == 'solid') {
           boxHolder.pop();
           objects.solids.pop();
           objects.nonFrozen.pop();
           console.log('removed solid');
           break;
-        } else if (keys.ctrlKey && boxHolder[length - 1]['types'][0] == 'ladder') {
+        } else if (keys.ctrlKey[0] && boxHolder[length - 1]['types'][0] == 'ladder') {
           boxHolder.pop();
           objects.ladders.pop();
           objects.nonFrozen.pop();
@@ -302,7 +312,7 @@ function onKeyDown(event) {
       }
       break;
     case 17: //ctrl
-      keys.ctrlKey = true;
+      keys.ctrlKey[0] = true;
       break;
   }
 }
@@ -312,43 +322,49 @@ function onKeyUp(event) {
 
   switch (keyCode) {
     case 68: //d
-      keys.dKey = false;
+      keys.dKey[0] = false;
+      keys.dKey[1] = false;
       break;
     case 83: //s
-      keys.sKey = false;
+      keys.sKey[0] = false;
       break;
     case 65: //a
-      keys.aKey = false;
+      keys.aKey[0] = false;
+      keys.aKey[1] = false;
       break;
     case 87: //w
-      keys.wKey = false;
+      keys.wKey[0] = false;
       break;
     case 13: //enter
-      keys.enterKey = false;
+      keys.enterKey[0] = false;
       break;
     case 32: //space
-      keys.spaceKey = false;
+      keys.spaceKey[0] = false;
       break;
     case 16: //shift
-      keys.shiftKey = false;
+      keys.shiftKey[0] = false;
       break;
     case 90: //z
-      keys.zKey = false;
+      keys.zKey[0] = false;
       break;
     case 88: //x
-      keys.xKey = false;
+      keys.xKey[0] = false;
       break;
     case 17: //ctrl
-      keys.ctrlKey = false;
+      keys.ctrlKey[0] = false;
       break;
   }
 }
 
 
 // * UTILITY FUNCTIONS ------------------------------------------------
-Object.prototype.getKeysByValue = function (value) {
-  let keys = Object.keys(this);
-  return keys.filter(key => this[key] === value);
+function noop() { /* No operation function */ }
+
+Object.prototype.getKeysByValue = function (selection) {
+  // console.log(
+  //   Object.keys(Object.fromEntries(Object.entries(this).filter((element) => element[1][0] == selection)))
+  // );
+  return filteredKeysTemp = Object.keys(Object.fromEntries(Object.entries(this).filter((element) => element[1][0] == selection)));
 }
 
 Object.prototype.filterArray = function (value) {
@@ -398,12 +414,10 @@ canvas.addEventListener("mouseup", function (e) {
   getMousePosition(canvas, false, e);
 });
 
-
 // * FUNCTIONS --------------------------------------------------------
-function noop() { /* No operation function */ }
 
 function frameUpdate() {
-  context.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   lastPos = [objects.player.posx, objects.player.posy];
   if (config.gravityEnabled) { playerMovementGravity(objects.player); } else { playerMovementNoGravity(objects.player); }
   if (animationRunDelayCounter <= animationRunDelay) { animationRunDelayCounter++; } else { animationRunDelayCounter = 0; }
@@ -432,6 +446,34 @@ function frameUpdate() {
     }
   }
   objects.player.draw();
+  scoreUpdate(1);
+}
+
+function scoreUpdate(value = 0) {
+  let gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+  ctx.font = "60px Arial";
+  let textWidth = ctx.measureText("Score: " + score).width;
+
+  gradient.addColorStop("0", " magenta");
+  gradient.addColorStop("0.1", "cyan");
+  gradient.addColorStop("0.5", "blue");
+  gradient.addColorStop("1.0", "red");
+
+  score += value;
+
+  ctx.save();
+  ctx.scale(1, -1);
+
+  ctx.beginPath();
+  ctx.rect(13, -73, textWidth + 8, 60);
+  ctx.fillStyle = '#222222';
+  ctx.fill();
+  ctx.closePath();
+
+  ctx.fillStyle = gradient;
+
+  ctx.fillText("Score: " + score, 20, -20);
+  ctx.restore();
 }
 
 function animate(entity) {
@@ -450,42 +492,53 @@ function switchAnimation(entity, animationID, animationSpeed = config.defaultAni
   entity.sy = spriteSheets[entity.imgLink][entity.animation]["sy"];
   entity.sWidth = spriteSheets[entity.imgLink][entity.animation]["sWidth"];
   entity.sHeight = spriteSheets[entity.imgLink][entity.animation]["sHeight"];
-
 }
 
 function playerMovementGravity(player) {
+  // return;
   moveValues = player.moveValues;
   moveValues.amount = moveValues.speed;
+  let wallJump = false;
 
   if (moveValues.y > -2) {
     moveValues.y -= config.gravity;
   }
 
-  if (player.touchedGround) {
-    if (moveValues.x > .2) {
-      moveValues.x -= .2;
-    } else if (moveValues.x < -.2) {
-      moveValues.x += .2;
-    } else {
-      moveValues.x = 0;
-    }
+  if (moveValues.x > .2) {
+    moveValues.x -= player.touchedGround ? .2 : .01;
+  } else if (moveValues.x < -.2) {
+    moveValues.x += player.touchedGround ? .2 : .01;
+  } else {
+    moveValues.x = 0;
   }
 
-  let collision = detectCollision(player, objects.solids, false);
-  if (keys.spaceKey && !player.touchedGround && (!collision.borderLeft && !collision.borderRight)) {
+
+  // FIXME: Wall jumps sometimes allow the player to just zoom up walls and not actually jump
+  let collisionSolids = detectCollision(player, objects.solids, false);
+  let collisionLadders = detectCollision(player, objects.ladders, false);
+
+  if (keys.spaceKey && !player.touchedGround && (!collisionSolids.borderLeft && !collisionSolids.borderRight) && !collisionLadders.ladder) {
     player.touchedGround = false;
-    if (collision.left && keys.aKey) {
+    if (collisionSolids.left && keys.aKey[0]) {
       player.touchedGround = true;
       moveValues.x = 1.5;
-      keys.aKey = false;
-    } else if (collision.right && keys.dKey) {
+      keys.aKey[0] = false;
+      wallJump = true;
+      playerDirection = "right";
+      scoreUpdate(1000);
+    } else if (collisionSolids.right && keys.dKey[0]) {
       player.touchedGround = true;
       moveValues.x = -1.5;
-      keys.dKey = false;
+      keys.dKey[0] = false;
+      wallJump = true;
+      playerDirection = "left";
+      scoreUpdate(1000);
     }
   }
 
   keysDown = keys.getKeysByValue(true);
+  keysDown = keysDown.concat(keys.getKeysByValue([true, true]));
+
   if (keysDown.length == 0 && player.touchedGround) {
     switch (playerDirection) {
       case "right":
@@ -505,11 +558,13 @@ function playerMovementGravity(player) {
         break;
     }
   }
-  if (!keys.sKey) { player.crouched = false; }
+
+  if (!keys.sKey[0]) { player.crouched = false; }
 
   for (let i = 0; i < keysDown.length; i++) {
     switch (keysDown[i]) {
       case 'dKey':
+        // if (wallJump[0] == "left") { return; }
         moveValues.x = 1;
         if (player.touchedGround) { switchAnimation(player, 'walkR', 2); }
         playerDirection = 'right';
@@ -518,6 +573,7 @@ function playerMovementGravity(player) {
         player.crouched = true;
         break;
       case 'aKey':
+        // if (wallJump[0] == "right") { return; }
         moveValues.x = -1;
         if (player.touchedGround) { switchAnimation(player, 'walkL', 2); }
         playerDirection = 'left';
@@ -531,6 +587,10 @@ function playerMovementGravity(player) {
         break;
     }
   }
+
+  if (keys.aKey[1] && !wallJump && player.touchedGround) { keys.aKey[0] = true; }
+  if (keys.dKey[1] && !wallJump && player.touchedGround) { keys.dKey[0] = true; }
+
   detectCollision(player, objects.solids);
   detectCollision(player, objects.ladders);
   player.height = player.crouched ? player.initHeight / 2 : player.initHeight;
@@ -686,50 +746,79 @@ let detectCollision = function (entity, checkArray = [], moveEntity = true) {
   return collision;
 }
 
-makePlayer = function () {
-  if (!objects.player) {
-    new entity(100, 200, 310, 310, ['img', 'player', 'idleR'], ['player']);
-  }
-  if (!objects.origin) {
-    objects.origin = new entity(10, 10, 0, 0, ["draw", config.debugMode ? "#23f" : "rgba(0, 0, 0, 0)"], ["solid"]);
-  }
-}
-
-makeBorder = function () {
-  let borderThickness = config.borderThickness;
+function makeDefaultEntities() {
+  const borderThickness = config.borderThickness;
   let borderColor = config.debugMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0)';
+  let defaultEntities = [
+    {
+      "width": 1000000, "height": 600,
+      "initPosx": -600, "initPosy": -560,
+      "styles": ["draw", "#92d03b"],
+      "types": ["solid"]
+    },
+    {
+      "width": 600, "height": 10000,
+      "initPosx": -500, "initPosy": 0,
+      "styles": ["draw", "#92d03b"],
+      "types": ["solid"]
+    },
+    {
+      "width": canvas.width, "height": borderThickness,
+      "initPosx": 0, "initPosy": 0,
+      "styles": ["draw", borderColor],
+      "types": ["borderWallBottom", "border", "solid", "frozen"]
+    },
+    {
+      "width": canvas.width, "height": borderThickness,
+      "initPosx": 0, "initPosy": canvas.height - borderThickness,
+      "styles": ["draw", borderColor],
+      "types": ["borderWallTop", "border", "solid", "frozen"]
+    },
+    {
+      "width": borderThickness - 60, "height": canvas.height,
+      "initPosx": 0, "initPosy": 0,
+      "styles": ["draw", borderColor],
+      "types": ["borderWallLeft", "border", "solid", "frozen"]
+    },
+    {
+      "width": borderThickness + 150, "height": canvas.height,
+      "initPosx": canvas.width - borderThickness - 150, "initPosy": 0,
+      "styles": ["draw", borderColor],
+      "types": ["borderWallRight", "border", "solid", "frozen"]
+    },
 
-  new entity(canvas.width, borderThickness, 0, 0, ['draw', borderColor], ['borderWallBottom', 'border', 'solid', 'frozen']);
-  new entity(canvas.width, borderThickness, 0, canvas.height - borderThickness, ['draw', borderColor], ['borderWallTop', 'border', 'solid', 'frozen']);
-  new entity(borderThickness - 60, canvas.height, 0, 0, ['draw', borderColor], ['borderWallLeft', 'border', 'solid', 'frozen']);
-  new entity(borderThickness + 150, canvas.height, canvas.width - borderThickness - 150, 0, ['draw', borderColor], ['borderWallRight', 'border', 'solid', 'frozen']);
+  ];
+  loadMap(null, false, defaultEntities);
 }
 
-function loadMap(mapID = "init") {
-  objects = {
-    player: null,
-    origin: null,
-    img: [],
-    solids: [],
-    ladders: [],
-    frozen: [],
-    nonFrozen: [],
-    borders: [],
-  };
-  let mapObjects = map[mapID]
-  let length = Object.keys(mapObjects).length;
+function loadMap(mapID = "init", clearMap = true, mapArray = null) {
+  if (clearMap) {
+    objects = { player: null, origin: null, img: [], solids: [], ladders: [], frozen: [], nonFrozen: [], borders: [] };
+  }
+
+  // If the function is called with a mapArray use that instead of pulling from the map.json file
+  let mapObjects = mapArray ? mapArray : map[mapID];
+  let length = mapArray ? mapArray.length : Object.keys(mapObjects).length;
+
   for (let i = 0; i < length; i++) {
     new entity(
-      mapObjects[i]["width"],
-      mapObjects[i]["height"],
-      mapObjects[i]["initPosx"],
-      mapObjects[i]["initPosy"],
+      mapObjects[i]["width"], mapObjects[i]["height"],
+      mapObjects[i]["initPosx"], mapObjects[i]["initPosy"],
       mapObjects[i]["styles"],
       mapObjects[i]["types"]
     );
   }
-  makeBorder();
-  makePlayer();
+
+  // FIXME: This is apparently deprecated now and should be fixed. But I have no way to stop recursion.
+  if (loadMap.caller.name != "makeDefaultEntities") makeDefaultEntities();
+
+  // On loadMap, the game will check if the origin and player are created. If not, it will create them.
+  if (!objects.player) {
+    objects.player = new entity(100, 200, 310, 310, ['img', 'player', 'idleR'], ['player']);
+  }
+  if (!objects.origin) {
+    objects.origin = new entity(10, 10, 0, 0, ["draw", config.debugMode ? "#23f" : "rgba(0, 0, 0, 0)"], ["solid"]);
+  }
 }
 
 function playSound(sound) {
@@ -737,8 +826,7 @@ function playSound(sound) {
   soundManager.play(sound);
 }
 
-window.testScript = function () {
-  console.log('test');
+window.startUp = function () {
   loadMap();
   updateInterval = setInterval(frameUpdate, 16);
 }
