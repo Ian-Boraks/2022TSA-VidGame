@@ -264,7 +264,6 @@ function onKeyDown(event) {
         else if (startSong == 2) { playSound('backgroundMusic2'); }
         backgroundMusicPlaying = true;
       }
-      console.log('d');
       break;
     case 83: //s
       keys.sKey = true;
@@ -273,7 +272,6 @@ function onKeyDown(event) {
       if (keys.aKey[1]) { break; }
       keys.aKey[0] = true;
       keys.aKey[1] = true;
-      console.log('a');
       break;
     case 87: //w
       keys.wKey[0] = true;
