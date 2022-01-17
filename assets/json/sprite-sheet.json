@@ -4,42 +4,42 @@
 		"idleL": {
 			"frames": 1,
 			"sx": 200,
-			"sy": 400,
+			"sy": 800,
 			"sWidth": 100,
 			"sHeight": 196
 		},
 		"idleR": {
 			"frames": 1,
 			"sx": 200,
-			"sy": 600,
+			"sy": 1000,
 			"sWidth": 100,
 			"sHeight": 196
 		},
 		"walkL": {
 			"frames": 2,
 			"sx": 0,
-			"sy": 0,
+			"sy": 400,
 			"sWidth": 100,
 			"sHeight": 196
 		},
 		"walkR": {
 			"frames": 2,
 			"sx": 0,
-			"sy": 200,
+			"sy": 600,
 			"sWidth": 100,
 			"sHeight": 196
 		},
 		"jumpL": {
 			"frames": 5,
 			"sx": 0,
-			"sy": 400,
+			"sy": 800,
 			"sWidth": 100,
 			"sHeight": 196
 		},
 		"jumpR": {
 			"frames": 5,
 			"sx": 0,
-			"sy": 600,
+			"sy": 1000,
 			"sWidth": 100,
 			"sHeight": 196
 		}

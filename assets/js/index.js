@@ -37,6 +37,7 @@ let objects = {
   nonFrozen: [],
   borders: [],
   tokens: [],
+  traps: [],
   grids: []
 };
 
@@ -91,7 +92,7 @@ window.addEventListener('resize', () => {
       }
     );
 
-    makeDefaultEntities();
+    makeDefaultEntities(true);
   }
 });
 
@@ -142,23 +143,24 @@ soundManager.onready(function () {
     id: 'backgroundMusic',
     url: '/assets/sound/CHIPTUNE_The_Old_Tower_Inn.mp3',
     onfinish: function () { playSound('backgroundMusic1'); },
-    volume: 90
+    volume: 70
   });
   soundManager.createSound({
     id: 'backgroundMusic1',
     url: '/assets/sound/CHIPTUNE_Minstrel_Dance.mp3',
     onfinish: function () { setTimeout(() => { playSound('backgroundMusic2'); }, 2000) },
-    volume: 90
+    volume: 70
   });
   soundManager.createSound({
     id: 'backgroundMusic2',
     url: '/assets/sound/CHIPTUNE_The_Bards_Tale.mp3',
     onfinish: function () { setTimeout(() => { playSound('backgroundMusic'); }, 2000) },
-    volume: 90
+    volume: 70
   });
   soundManager.createSound({
     id: 'trombone',
     url: '/assets/sound/FX68GWY-funny-trombone-slide-accent.mp3',
+    autoLoad: false,
   });
   soundManager.createSound({
     id: 'pickUp',
@@ -168,13 +170,18 @@ soundManager.onready(function () {
   soundManager.createSound({
     id: 'jump',
     url: '/assets/sound/mixkit-player-jumping-in-a-video-game-2043.wav',
-    volume: 50
+    volume: 30
   });
   soundManager.createSound({
     id: 'wallJump',
     url: '/assets/sound/mixkit-video-game-spin-jump-2648.wav',
     volume: 50,
     autoLoad: false
+  });
+  soundManager.createSound({
+    id: 'death',
+    url: '/assets/sound/163442__under7dude__man-dying.wav',
+    volume: 100
   });
 });
 
@@ -228,6 +235,7 @@ class entity {
     if (types.indexOf('border') > -1) { objects.borders.push(this); }
     if (types.indexOf('token') > -1) { objects.tokens.push(this); }
     if (types.indexOf('grid') > -1) { objects.grids.push(this); }
+    if (types.indexOf('trap') > -1) { objects.traps.push(this); }
 
     this.draw();
   }
@@ -275,150 +283,6 @@ class entity {
     }
   }
 }
-
-// * KEYBOARD CONTROLS ------------------------------------------------
-var keys = {
-  dKey: [false, false], // Has additional holding boolean
-  aKey: [false, false], // Has additional holding boolean
-  sKey: [false],
-  spaceKey: [false],
-  shiftKey: [false],
-  wKey: [false],
-  xKey: [false],
-  zKey: [false],
-  ctrlKey: [false],
-  enterKey: [false],
-};
-
-function onKeyDown(event) {
-  let keyCode = event.keyCode;
-  switch (keyCode) {
-    case 68: //d
-      if (keys.dKey[1]) { break; }
-      keys.dKey[0] = true;
-      keys.dKey[1] = true;
-
-      if (!backgroundMusicPlaying) {
-        let startSong = Math.floor(Math.random() * 3);
-        if (startSong == 0) { playSound('backgroundMusic'); }
-        else if (startSong == 1) { playSound('backgroundMusic1'); }
-        else if (startSong == 2) { playSound('backgroundMusic2'); }
-        backgroundMusicPlaying = true;
-      }
-      break;
-    case 83: //s
-      keys.sKey[0] = true;
-      break;
-    case 65: //a
-      if (keys.aKey[1]) { break; }
-      keys.aKey[0] = true;
-      keys.aKey[1] = true;
-      break;
-    case 87: //w
-      keys.wKey[0] = true;
-      break;
-    case 13: //enter
-      keys.enterKey[0] = true;
-      switch (keys.shiftKey[0]) {
-        case true:
-          debugMode = !debugMode;
-          alert(debugMode ? "debugMode is: on" : "debugMode is: off");
-          break;
-        default:
-          editorMode = !editorMode;
-          if (editorMode && debugMode) { drawGrid(editorPrecision); } else {
-            const length = objects.grids.length;
-            for (let i = 0; i < length; i++) {
-              objects.remove(objects.grids[i]);
-            }
-          }
-          alert(editorMode ? "Editor Mode is: on" : "Editor Mode is: off");
-          break;
-      }
-      window.dispatchEvent(new Event('resize'));
-      break;
-    case 32: //space
-      keys.spaceKey[0] = true;
-      break;
-    case 16: //shift
-      keys.shiftKey[0] = true;
-      break;
-    case 90: //z
-      keys.zKey[0] = true;
-      let length = boxHolder.length;
-      if (editorMode && length > 0) {
-        if (keys.ctrlKey[0] && boxHolder[length - 1]['types'][0] == 'solid') {
-          boxHolder.pop();
-          objects.solids.pop();
-          objects.nonFrozen.pop();
-          console.log('removed solid');
-        } else if (keys.ctrlKey[0] && boxHolder[length - 1]['types'][0] == 'ladder') {
-          boxHolder.pop();
-          objects.ladders.pop();
-          objects.nonFrozen.pop();
-          console.log('removed ladder');
-        } else {
-          console.log('Error: cannot remove non-solid or non-ladder');
-        }
-      }
-      break;
-    case 17: //ctrl
-      keys.ctrlKey[0] = true;
-      break;
-    case 221: //]
-      if (editorMode) {
-        editorPrecision += 5;
-        if (debugMode) { drawGrid(editorPrecision); }
-      }
-      break;
-    case 219: //[
-      if (editorMode && editorPrecision > 5) {
-        editorPrecision -= 5;
-        if (debugMode) { drawGrid(editorPrecision); }
-      }
-      break;
-  }
-}
-
-function onKeyUp(event) {
-  let keyCode = event.keyCode;
-
-  switch (keyCode) {
-    case 68: //d
-      keys.dKey[0] = false;
-      keys.dKey[1] = false;
-      break;
-    case 83: //s
-      keys.sKey[0] = false;
-      break;
-    case 65: //a
-      keys.aKey[0] = false;
-      keys.aKey[1] = false;
-      break;
-    case 87: //w
-      keys.wKey[0] = false;
-      break;
-    case 13: //enter
-      keys.enterKey[0] = false;
-      break;
-    case 32: //space
-      keys.spaceKey[0] = false;
-      break;
-    case 16: //shift
-      keys.shiftKey[0] = false;
-      break;
-    case 90: //z
-      keys.zKey[0] = false;
-      break;
-    case 88: //x
-      keys.xKey[0] = false;
-      break;
-    case 17: //ctrl
-      keys.ctrlKey[0] = false;
-      break;
-  }
-}
-
 
 // * UTILITY FUNCTIONS ------------------------------------------------
 function noop() { /* No operation function */ }
@@ -474,16 +338,40 @@ function getMousePosition(canvas, start, event) {
     endBox.x = x;
     endBox.y = y;
     if (editorMode) {
-      boxHolder.push(
-        {
-          "width": Math.abs(endBox.x - startBox.x).round(editorPrecision),
-          "height": Math.abs(endBox.y - startBox.y).round(editorPrecision),
-          "initPosx": Math.min(startBox.x, endBox.x).round(editorPrecision),
-          "initPosy": Math.min(startBox.y, endBox.y).round(editorPrecision),
-          "styles": keys.shiftKey[0] ? ["draw", "#2370db"] : ["draw", "#f370db"],
-          "types": keys.shiftKey[0] ? ["ladder"] : ["solid"]
-        }
-      );
+      if (Math.abs(endBox.x - startBox.x).round(editorPrecision) == 0 || Math.abs(endBox.y - startBox.y).round(editorPrecision) == 0) {
+        throw "Error: box must be at least 1 unit in size";
+      }
+
+      var boxTemp = {
+        "width": Math.abs(endBox.x - startBox.x).round(editorPrecision),
+        "height": Math.abs(endBox.y - startBox.y).round(editorPrecision),
+        "initPosx": Math.min(startBox.x, endBox.x).round(editorPrecision),
+        "initPosy": Math.min(startBox.y, endBox.y).round(editorPrecision),
+        "styles": [],
+        "types": [],
+      }
+
+      if (keys.oneKey[0]) {
+        boxTemp["styles"] = ["draw", "#2370db"];
+        boxTemp["types"] = ["ladder"];
+      } else if (keys.twoKey[0]) {
+        boxTemp["styles"] = ["draw", "#f56042"];
+        boxTemp["types"] = ["trap"];
+      } else if (keys.threeKey[0]) {
+
+        boxTemp["styles"] = ["draw", "#42f5a1"];
+        boxTemp["types"] = ["token"];
+
+      } else if (keys.fourKey[0]) {
+        boxTemp["styles"] = ["draw", "#42f5a1"];
+        boxTemp["types"] = ["token"];
+      } else {
+        boxTemp["styles"] = ["draw", "#f370db"];
+        boxTemp["types"] = ["solid"];
+      }
+
+      boxHolder.push(boxTemp);
+
       new entity(
         boxHolder.at(-1)["width"],
         boxHolder.at(-1)["height"],
@@ -504,6 +392,171 @@ canvas.addEventListener("mouseup", function (e) {
   getMousePosition(canvas, false, e);
 });
 
+// * KEYBOARD CONTROLS ------------------------------------------------
+var keys = {
+  dKey: [false, false], // Has additional holding boolean
+  aKey: [false, false], // Has additional holding boolean
+  sKey: [false],
+  spaceKey: [false],
+  shiftKey: [false],
+  wKey: [false],
+  xKey: [false],
+  zKey: [false],
+  ctrlKey: [false],
+  enterKey: [false],
+  oneKey: [false],
+  twoKey: [false],
+  threeKey: [false],
+  fourKey: [false],
+};
+
+function onKeyDown(event) {
+  let keyCode = event.keyCode;
+  switch (keyCode) {
+    case 68: //d
+      if (keys.dKey[1]) { break; }
+      keys.dKey[0] = true;
+      keys.dKey[1] = true;
+
+      if (!backgroundMusicPlaying) {
+        let startSong = Math.floor(Math.random() * 3);
+        if (startSong == 0) { playSound('backgroundMusic'); }
+        else if (startSong == 1) { playSound('backgroundMusic1'); }
+        else if (startSong == 2) { playSound('backgroundMusic2'); }
+        backgroundMusicPlaying = true;
+      }
+      break;
+    case 83: //s
+      keys.sKey[0] = true;
+      break;
+    case 65: //a
+      if (keys.aKey[1]) { break; }
+      keys.aKey[0] = true;
+      keys.aKey[1] = true;
+      break;
+    case 87: //w
+      keys.wKey[0] = true;
+      break;
+    case 13: //enter
+      keys.enterKey[0] = true;
+      switch (keys.shiftKey[0]) {
+        case true:
+          debugMode = !debugMode;
+          alert(debugMode ? "debugMode is: on" : "debugMode is: off");
+          break;
+        default:
+          editorMode = !editorMode;
+          if (editorMode && debugMode) { drawGrid(editorPrecision); }
+          else if (!editorMode) {
+            const length = objects.grids.length;
+            for (let i = 0; i < length; i++) {
+              objects.remove(objects.grids[i]);
+            }
+            objects.grids = [];
+            console.log(boxHolder);
+          }
+          alert(editorMode ? "Editor Mode is: on" : "Editor Mode is: off");
+          break;
+      }
+      break;
+    case 32: //space
+      keys.spaceKey[0] = true;
+      break;
+    case 16: //shift
+      keys.shiftKey[0] = true;
+      break;
+    case 90: //z
+      keys.zKey[0] = true;
+      const length = boxHolder.length;
+      if (editorMode && length > 0) {
+        if (keys.ctrlKey[0]) {
+          objects.remove(boxHolder[length - 1]);
+          // boxHolder.pop();
+        }
+      }
+      break;
+    case 17: //ctrl
+      keys.ctrlKey[0] = true;
+      break;
+    case 221: //]
+      if (editorMode) {
+        editorPrecision += 5;
+        if (debugMode) { drawGrid(editorPrecision); }
+      }
+      break;
+    case 219: //[
+      if (editorMode && editorPrecision > 5) {
+        editorPrecision -= 5;
+        if (debugMode) { drawGrid(editorPrecision); }
+      }
+      break;
+    case 49: //1
+      keys.oneKey[0] = true;
+      break;
+    case 50: //2
+      keys.twoKey[0] = true;
+      break;
+    case 51: //3
+      keys.threeKey[0] = true;
+      break;
+    case 52: //4
+      keys.fourKey[0] = true;
+      break;
+  }
+}
+
+function onKeyUp(event) {
+  let keyCode = event.keyCode;
+
+  switch (keyCode) {
+    case 68: //d
+      keys.dKey[0] = false;
+      keys.dKey[1] = false;
+      break;
+    case 83: //s
+      keys.sKey[0] = false;
+      break;
+    case 65: //a
+      keys.aKey[0] = false;
+      keys.aKey[1] = false;
+      break;
+    case 87: //w
+      keys.wKey[0] = false;
+      break;
+    case 13: //enter
+      keys.enterKey[0] = false;
+      break;
+    case 32: //space
+      keys.spaceKey[0] = false;
+      break;
+    case 16: //shift
+      keys.shiftKey[0] = false;
+      break;
+    case 90: //z
+      keys.zKey[0] = false;
+      break;
+    case 88: //x
+      keys.xKey[0] = false;
+      break;
+    case 17: //ctrl
+      keys.ctrlKey[0] = false;
+      break;
+    case 49: //1
+      keys.oneKey[0] = false;
+      break;
+    case 50: //2
+      keys.twoKey[0] = false;
+      break;
+    case 51: //3
+      keys.threeKey[0] = false;
+      break;
+    case 52: //4
+      keys.fourKey[0] = false;
+      break;
+  }
+}
+
+// * FUNCTIONS --------------------------------------------------------
 var drawGrid = function (size) {
   // FIXME: Objects drawn in this function are perfect match for grid. But if drawn outside of it, they do not fit perfectly.
   const length = objects.grids.length;
@@ -524,51 +577,70 @@ var drawGrid = function (size) {
   new entity((100).round(editorPrecision), (100).round(editorPrecision), (300).round(editorPrecision), (400).round(editorPrecision), ['grid', 'white'], ['grid']);
 };
 
-// * FUNCTIONS --------------------------------------------------------
 function frameUpdate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  lastPos = [objects.player.posx, objects.player.posy];
-  if (config.gravityEnabled) { playerMovementGravity(objects.player); } else { playerMovementNoGravity(objects.player); }
-  if (animationRunDelayCounter <= animationRunDelay) { animationRunDelayCounter++; } else { animationRunDelayCounter = 0; }
-  if (animationRunDelayCounter == animationRunDelay) {
-    for (let i = 0; i < objects.img.length; i++) {
-      animate(objects.img[i]);
-    }
+
+  switch (objects.player != null) {
+    case true:
+      lastPos = [objects.player.posx, objects.player.posy];
+      if (config.gravityEnabled) { playerMovementGravity(objects.player); } else { playerMovementNoGravity(objects.player); }
+      if (animationRunDelayCounter <= animationRunDelay) { animationRunDelayCounter++; } else { animationRunDelayCounter = 0; }
+      if (animationRunDelayCounter == animationRunDelay) {
+        for (let i = 0; i < objects.img.length; i++) {
+          animate(objects.img[i]);
+        }
+      }
+      for (let i = 0; i < objects.nonFrozen.length; i++) {
+        objects.nonFrozen[i].move();
+        objects.nonFrozen[i].draw();
+      }
+      for (let i = 0; i < objects.frozen.length; i++) {
+        objects.frozen[i].draw();
+      }
+      scoreUpdate(-1);
+      if (!objects.player) { break; }
+      if (Math.abs(lastPos[0] - objects.player.posx) > config.playerMaxSpeedError || Math.abs(lastPos[1] - objects.player.posy) > config.playerMaxSpeedError) {
+        console.log("Player moved too fast");
+        objects.player.posx = lastPos[0];
+        objects.player.posy = lastPos[1];
+        let collision = detectCollision(objects.player, "solids", false);
+        if (collision.bottom) {
+          objects.player.posy = lastPos[1] + 4;
+        }
+        if (collision.top) {
+          objects.player.posy = lastPos[1] - 4;
+        }
+      }
+      objects.player.draw();
+      break;
+    default:
+      // If player is dead or not present, only render the terrain and statics
+      for (let i = 0; i < objects.img.length; i++) {
+        animate(objects.img[i]);
+      }
+      for (let i = 0; i < objects.nonFrozen.length; i++) {
+        objects.nonFrozen[i].move();
+        objects.nonFrozen[i].draw();
+      }
+      for (let i = 0; i < objects.frozen.length; i++) {
+        objects.frozen[i].draw();
+      }
+      scoreUpdate();
+      break;
   }
-  for (let i = 0; i < objects.nonFrozen.length; i++) {
-    objects.nonFrozen[i].move();
-    objects.nonFrozen[i].draw();
-  }
-  for (let i = 0; i < objects.frozen.length; i++) {
-    objects.frozen[i].draw();
-  }
-  if (Math.abs(lastPos[0] - objects.player.posx) > config.playerMaxSpeedError || Math.abs(lastPos[1] - objects.player.posy) > config.playerMaxSpeedError) {
-    console.log("Player moved too fast");
-    objects.player.posx = lastPos[0];
-    objects.player.posy = lastPos[1];
-    let collision = detectCollision(objects.player, "solids", false);
-    if (collision.bottom) {
-      objects.player.posy = lastPos[1] + 4;
-    }
-    if (collision.top) {
-      objects.player.posy = lastPos[1] - 4;
-    }
-  }
-  objects.player.draw();
-  scoreUpdate(1);
 }
 
 function scoreUpdate(value = 0) {
   let gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
   ctx.font = "60px Arial";
-  let textWidth = ctx.measureText("Score: " + score).width;
+  score += value;
+  if (score < 0) { score = 0; }
+  let textWidth = ctx.measureText("Score: " + score.round(1, true)).width;
 
   gradient.addColorStop("0", " magenta");
   gradient.addColorStop("0.1", "cyan");
   gradient.addColorStop("0.5", "blue");
   gradient.addColorStop("1.0", "red");
-
-  score += value;
 
   ctx.save();
   ctx.scale(1, -1);
@@ -581,7 +653,7 @@ function scoreUpdate(value = 0) {
 
   ctx.fillStyle = gradient;
 
-  ctx.fillText("Score: " + score, 20, -20);
+  ctx.fillText("Score: " + score.round(1, true), 20, -20);
 
   if (editorMode) {
     // TODO: Move this out of the scoreUpdate function
@@ -691,16 +763,15 @@ function playerMovementGravity(player) {
   let collisionSolids = detectCollision(player);
   let collisionLadders = detectCollision(player, "ladders");
   let collisionTokens = detectCollision(player, "tokens");
+  let collisionTraps = detectCollision(player, "traps");
 
   if (
-    keys.spaceKey &&
+    keys.spaceKey[0] &&
     !player.touchedGround &&
     !collisionSolids.borderLeft &&
     !collisionSolids.borderRight &&
-    !collisionLadders.ladder &&
-    !keys.sKey[0]
+    !collisionLadders.ladder
   ) {
-    // FIXME: able to infinite wall jump kinda on border walls
     player.touchedGround = false;
     if (collisionSolids.left && keys.aKey[0]) {
       player.touchedGround = true;
@@ -747,29 +818,54 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       checkArray = objects.ladders;
       length = checkArray.length;
       if (length <= 0) { break; }
-      if (checkArray.length)
-        for (let i = 0; i < checkArray.length; i++) {
-          const ladder = checkArray[i];
-          if (
-            (
-              entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > ladder.posx &&
-              entity.posx + (entity.moveValues.x * entity.moveValues.amount) < ladder.posx + ladder.width &&
-              entity.posy + entity.height > ladder.posy &&
-              entity.posy < ladder.posy + ladder.height
-            ) || (
-              entity.posx + entity.width > ladder.currentPosx &&
-              entity.posx < ladder.currentPosx + ladder.width &&
-              entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= ladder.posy &&
-              entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= ladder.posy + ladder.height
-            )
-          ) {
-            collision.ladder = true;
-            if (moveEntity) {
-              entity.moveValues.y = 1;
-            }
+      for (let i = 0; i < checkArray.length; i++) {
+        const ladder = checkArray[i];
+        if (
+          (
+            entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > ladder.posx &&
+            entity.posx + (entity.moveValues.x * entity.moveValues.amount) < ladder.posx + ladder.width &&
+            entity.posy + entity.height > ladder.posy &&
+            entity.posy < ladder.posy + ladder.height
+          ) || (
+            entity.posx + entity.width > ladder.currentPosx &&
+            entity.posx < ladder.currentPosx + ladder.width &&
+            entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= ladder.posy &&
+            entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= ladder.posy + ladder.height
+          )
+        ) {
+          collision.ladder = true;
+          if (moveEntity) {
+            entity.moveValues.y = 1;
           }
         }
+      }
       break;
+    case "traps":
+      checkArray = objects.traps;
+      length = checkArray.length;
+      if (length <= 0) { break; }
+      for (let i = 0; i < checkArray.length; i++) {
+        const trap = checkArray[i];
+        if (
+          (
+            entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > trap.posx &&
+            entity.posx + (entity.moveValues.x * entity.moveValues.amount) < trap.posx + trap.width &&
+            entity.posy + entity.height > trap.posy &&
+            entity.posy < trap.posy + trap.height
+          ) || (
+            entity.posx + entity.width > trap.currentPosx &&
+            entity.posx < trap.currentPosx + trap.width &&
+            entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= trap.posy &&
+            entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= trap.posy + trap.height
+          )
+        ) {
+          scoreUpdate(-5000);
+          objects.remove(trap);
+          objects.remove(objects.player);
+          objects.player = null;
+          playSound('death');
+        }
+      }
     case "tokens":
       checkArray = objects.tokens;
       length = checkArray.length;
@@ -908,22 +1004,24 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
   return collision;
 }
 
-function makeDefaultEntities() {
+function makeDefaultEntities(justBorders = false) {
   const borderThickness = config.borderThickness;
   const borderColor = debugMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0)';
   const defaultEntities = [
-    {
-      "width": 1000000, "height": 600,
-      "initPosx": -600, "initPosy": -560,
-      "styles": ["draw", "#92d03b"],
-      "types": ["solid"]
-    },
-    {
-      "width": 600, "height": 10000,
-      "initPosx": -500, "initPosy": 0,
-      "styles": ["draw", "#92d03b"],
-      "types": ["solid"]
-    },
+    !justBorders ?
+      {
+        "width": 1000000, "height": 600,
+        "initPosx": -600, "initPosy": -560,
+        "styles": ["draw", "#92d03b"],
+        "types": ["solid"]
+      } : null,
+    !justBorders ?
+      {
+        "width": 600, "height": 10000,
+        "initPosx": -500, "initPosy": 0,
+        "styles": ["draw", "#92d03b"],
+        "types": ["solid"]
+      } : null,
     {
       "width": canvas.width, "height": borderThickness,
       "initPosx": 0, "initPosy": 0,
@@ -943,8 +1041,8 @@ function makeDefaultEntities() {
       "types": ["borderWallLeft", "border", "solid", "frozen"]
     },
     {
-      "width": borderThickness + 150, "height": canvas.height,
-      "initPosx": canvas.width - borderThickness - 150, "initPosy": 0,
+      "width": borderThickness + 700, "height": canvas.height,
+      "initPosx": canvas.width - borderThickness - 700, "initPosy": 0,
       "styles": ["draw", borderColor],
       "types": ["borderWallRight", "border", "solid", "frozen"]
     }
@@ -977,9 +1075,10 @@ function loadMap(mapID = "init", clearMap = true, mapArray = null) {
   // This is mainly used for loading the default entities
   let mapObjects = mapArray ? mapArray : map[mapID];
   let length = mapArray ? mapArray.length : Object.keys(mapObjects).length;
-  let loadMapPrecision = 25;
+  let loadMapPrecision = 1;
 
   for (let i = 0; i < length; i++) {
+    if (!mapObjects[i] || mapObjects[i]["width"] == 0 || mapObjects[i]["height"] == 0) { continue; }
     new entity(
       (mapObjects[i]["width"] > loadMapPrecision ? mapObjects[i]["width"] : loadMapPrecision).round(loadMapPrecision),
       (mapObjects[i]["height"] > loadMapPrecision ? mapObjects[i]["height"] : loadMapPrecision).round(loadMapPrecision),
@@ -995,7 +1094,7 @@ function loadMap(mapID = "init", clearMap = true, mapArray = null) {
     if (loadMap.caller.name != "makeDefaultEntities") { makeDefaultEntities(); }
   } catch (TypeError) {
     makeDefaultEntities();
-    throw "TypeError:\nRecursion is not allowed check failed, making default entities";
+    throw "TypeError: loadMap.caller is null, recursion check failed.\n\nMaking default entities.";
   }
 }
 
