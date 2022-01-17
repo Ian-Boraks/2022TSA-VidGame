@@ -1,10 +1,11 @@
 const config = {
   gravityEnabled: true,
-  debugMode: true,
+  debugMode: false,
   gravity: .1,
   jumpHeight: 2,
   defaultPlayerSpeed: 7,
-  configPlayerMaxSpeed: 20,
+  playerMaxSpeedError: 20,
+  playerMaxSpeed: 1,
   scrollDistance: 300,
   borderThickness: 300,
   defaultAnimationRunDelay: 1,
@@ -12,6 +13,7 @@ const config = {
   defHeight: 1620
 }
 
+let editorPrecision = 35;
 let editorMode = false;
 let startBox = { x: 0, y: 0 };
 let endBox = { x: 0, y: 0 };
@@ -33,7 +35,11 @@ let objects = {
   frozen: [],
   nonFrozen: [],
   borders: [],
+  tokens: [],
+  grids: []
 };
+
+const objectsInit = objects;
 
 let scrollOffsetAdjustment = {
   x: 0,
@@ -94,7 +100,6 @@ $.getJSON(
     url: '/assets/json/map.json',
     success: function (data) {
       map = data;
-      console.log(map);
     }
   }
 )
@@ -105,7 +110,6 @@ $.getJSON(
     url: '/assets/json/sprite-sheet.json',
     success: function (data) {
       spriteSheets = data;
-      console.log(spriteSheets);
     }
   }
 )
@@ -124,30 +128,33 @@ window.addEventListener('DOMContentLoaded', function () {
 window.addEventListener("keydown", onKeyDown, false);
 window.addEventListener("keyup", onKeyUp, false);
 
+soundManager.setup({
+  debugMode: false
+});
+soundManager.defaultOptions = {
+  autoLoad: true,
+}
 soundManager.onready(function () {
   // ! All sound effects need to be loaded with this function before they can be played
   // Music: https://www.chosic.com/free-music/all/ 
   soundManager.createSound({
     id: 'backgroundMusic',
     url: '/assets/sound/CHIPTUNE_The_Old_Tower_Inn.mp3',
-    autoLoad: true,
     onfinish: function () { playSound('backgroundMusic1'); }
   });
   soundManager.createSound({
     id: 'backgroundMusic1',
     url: '/assets/sound/CHIPTUNE_Minstrel_Dance.mp3',
-    autoLoad: true,
     onfinish: function () { setTimeout(() => { playSound('backgroundMusic2'); }, 2000) }
   });
   soundManager.createSound({
     id: 'backgroundMusic2',
     url: '/assets/sound/CHIPTUNE_The_Bards_Tale.mp3',
-    autoLoad: true,
     onfinish: function () { setTimeout(() => { playSound('backgroundMusic'); }, 2000) }
   });
   soundManager.createSound({
     id: 'trombone',
-    url: '/assets/sound/FX68GWY-funny-trombone-slide-accent.mp3'
+    url: '/assets/sound/FX68GWY-funny-trombone-slide-accent.mp3',
   });
 });
 
@@ -157,25 +164,29 @@ class entity {
     this.width = width; this.height = height;
     this.initWidth = width; this.initHeight = height;
     this.posx = initPosx; this.posy = initPosy;
-    this.style = styles[0];
     this.types = types;
     this.mainType = types[0];
     this.moveValues = { x: 0, y: 0, amount: 0, speed: 7 };
 
     switch (styles[0]) {
       case 'img':
+        this.style = 'img';
         objects.img.push(this);
         this.imgLink = styles[1];
         this.img = new Image();
         this.img.src = spriteSheets[styles[1]]["img"];
         this.animation = styles[2];
-        console.log(styles[2]);
         this.sx = spriteSheets[styles[1]][this.animation]["sx"];
         this.sy = spriteSheets[styles[1]][this.animation]["sy"];
         this.sWidth = spriteSheets[styles[1]][this.animation]["sWidth"];
         this.sHeight = spriteSheets[styles[1]][this.animation]["sHeight"];
         break;
       case 'draw':
+        this.style = 'draw';
+        this.color = styles[1];
+        break;
+      case 'grid':
+        this.style = 'grid';
         this.color = styles[1];
         break;
       default:
@@ -189,11 +200,14 @@ class entity {
       this.lastPos = [undefined, undefined];
       this.lastMove = [undefined, undefined];
     }
+
     if (types.indexOf('solid') > -1) { objects.solids.push(this); }
     if (types.indexOf('ladder') > -1) { objects.ladders.push(this); }
     if (types.indexOf('frozen') > -1) { objects.frozen.push(this); } else { objects.nonFrozen.push(this); }
     if (types.indexOf('slope') > -1) { objects.slopes.push(this); }
     if (types.indexOf('border') > -1) { objects.borders.push(this); }
+    if (types.indexOf('token') > -1) { objects.tokens.push(this); }
+    if (types.indexOf('grid') > -1) { objects.grids.push(this); }
 
     this.draw();
   }
@@ -205,13 +219,19 @@ class entity {
         break;
       case 'draw':
         ctx.beginPath();
-        ctx.rect(this.posx, this.posy, this.width, this.height);
         ctx.fillStyle = this.color;
-        ctx.fill();
+        ctx.fillRect(this.posx, this.posy, this.width, this.height);
         ctx.closePath();
         break;
+      case 'grid':
+        ctx.beginPath();
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 3;
+        ctx.rect(this.posx, this.posy, this.width, this.height);
+        ctx.stroke();
+        ctx.closePath();
       default:
-        console.log('Error: entity style not found (draw)');
+        // console.log('Error: entity style not found (draw)');
         break;
     }
   }
@@ -238,8 +258,8 @@ class entity {
 
 // * KEYBOARD CONTROLS ------------------------------------------------
 var keys = {
-  dKey: [false, false],
-  aKey: [false, false],
+  dKey: [false, false], // Has additional holding boolean
+  aKey: [false, false], // Has additional holding boolean
   sKey: [false],
   spaceKey: [false],
   shiftKey: [false],
@@ -247,6 +267,7 @@ var keys = {
   xKey: [false],
   zKey: [false],
   ctrlKey: [false],
+  enterKey: [false],
 };
 
 function onKeyDown(event) {
@@ -279,9 +300,14 @@ function onKeyDown(event) {
     case 13: //enter
       keys.enterKey[0] = true;
       editorMode = !editorMode;
+      if (editorMode && debugMode) { drawGrid(editorPrecision); } else {
+        const length = objects.grids.length;
+        for (let i = 0; i < length; i++) {
+          objects.remove(objects.grids[i]);
+        }
+      }
       alert(editorMode ? "Editor Mode is: on" : "Editor Mode is: off");
       window.dispatchEvent(new Event('resize'));
-      console.log(boxHolder);
       break;
     case 32: //space
       keys.spaceKey[0] = true;
@@ -311,6 +337,18 @@ function onKeyDown(event) {
       break;
     case 17: //ctrl
       keys.ctrlKey[0] = true;
+      break;
+    case 221: //]
+      if (editorMode) {
+        editorPrecision += 5;
+        if (debugMode) { drawGrid(editorPrecision); }
+      }
+      break;
+    case 219: //[
+      if (editorMode && editorPrecision > 5) {
+        editorPrecision -= 5;
+        if (debugMode) { drawGrid(editorPrecision); }
+      }
       break;
   }
 }
@@ -358,6 +396,14 @@ function onKeyUp(event) {
 // * UTILITY FUNCTIONS ------------------------------------------------
 function noop() { /* No operation function */ }
 
+Number.prototype.round = function (num, roundUp = false) {
+  if (roundUp) {
+    return Math.ceil(this / num) * num;
+  } else {
+    return Math.round(this / num) * num;
+  }
+}
+
 Object.prototype.getKeysByValue = function (selection) {
   // console.log(
   //   Object.keys(Object.fromEntries(Object.entries(this).filter((element) => element[1][0] == selection)))
@@ -371,9 +417,28 @@ Object.prototype.filterArray = function (value) {
   });
 }
 
+Array.prototype.remove = function (what) {
+  const index = this.indexOf(what)
+  if (index > -1) { this.splice(index, 1); }
+  else { console.log('Error: element not found'); }
+};
+
+Object.prototype.remove = function (what) {
+  let keyList = Object.keys(this);
+  if (this == objects) {
+    keyList.remove("player");
+    keyList.remove("origin");
+  }
+  for (let i = 0; i < keyList.length; i++) {
+    const arrayName = keyList[i];
+    const index = this[arrayName].indexOf(what)
+    if (index > -1) { this[arrayName].splice(index, 1); }
+  }
+};
+
 function getMousePosition(canvas, start, event) {
-  const x = (event.clientX * canvas.width / canvas.clientWidth) - objects.origin.posx;
-  const y = ((innerHeight - event.clientY) * canvas.height / canvas.clientHeight) - objects.origin.posy;
+  const x = ((event.clientX * canvas.width / canvas.clientWidth) - objects.origin.posx).round(editorPrecision);
+  const y = (((innerHeight - event.clientY) * canvas.height / canvas.clientHeight) - objects.origin.posy).round(editorPrecision);
   console.log("Coordinate x: " + x, "Coordinate y: " + y);
   if (start) {
     startBox.x = x;
@@ -384,10 +449,10 @@ function getMousePosition(canvas, start, event) {
     if (editorMode) {
       boxHolder.push(
         {
-          "width": Math.abs(endBox.x - startBox.x),
-          "height": Math.abs(endBox.y - startBox.y),
-          "initPosx": Math.min(startBox.x, endBox.x),
-          "initPosy": Math.min(startBox.y, endBox.y),
+          "width": Math.abs(endBox.x - startBox.x).round(editorPrecision),
+          "height": Math.abs(endBox.y - startBox.y).round(editorPrecision),
+          "initPosx": Math.min(startBox.x, endBox.x).round(editorPrecision),
+          "initPosy": Math.min(startBox.y, endBox.y).round(editorPrecision),
           "styles": keys.shiftKey ? ["draw", "#2370db"] : ["draw", "#f370db"],
           "types": keys.shiftKey ? ["ladder"] : ["solid"]
         }
@@ -412,8 +477,27 @@ canvas.addEventListener("mouseup", function (e) {
   getMousePosition(canvas, false, e);
 });
 
-// * FUNCTIONS --------------------------------------------------------
+var drawGrid = function (size) {
+  // FIXME: Objects drawn in this function are perfect match for grid. But if drawn outside of it, they do not fit perfectly.
+  const length = objects.grids.length;
+  for (let i = 0; i < length; i++) {
+    objects.nonFrozen.remove(objects.grids[i]);
+  }
+  objects.grids = [];
+  w = canvas.width;
+  h = canvas.height;
+  squareX = (w / size).round(1, true);
+  squareY = (h / size).round(1, true);
+  // console.log("Grid size: " + squareX + "x, " + squareY + "y");
+  for (let j = 0; j < squareY; j++) {
+    for (let i = 0; i < squareX; i++) {
+      new entity(size, size, i * size, j * size, ['grid', '#f3333d'], ['grid']);
+    }
+  }
+  new entity((100).round(editorPrecision), (100).round(editorPrecision), (300).round(editorPrecision), (400).round(editorPrecision), ['grid', 'white'], ['grid']);
+};
 
+// * FUNCTIONS --------------------------------------------------------
 function frameUpdate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   lastPos = [objects.player.posx, objects.player.posy];
@@ -431,11 +515,11 @@ function frameUpdate() {
   for (let i = 0; i < objects.frozen.length; i++) {
     objects.frozen[i].draw();
   }
-  if (Math.abs(lastPos[0] - objects.player.posx) > config.configPlayerMaxSpeed || Math.abs(lastPos[1] - objects.player.posy) > config.configPlayerMaxSpeed) {
-    // console.log("Player moved too fast");
+  if (Math.abs(lastPos[0] - objects.player.posx) > config.playerMaxSpeedError || Math.abs(lastPos[1] - objects.player.posy) > config.playerMaxSpeedError) {
+    console.log("Player moved too fast");
     objects.player.posx = lastPos[0];
     objects.player.posy = lastPos[1];
-    let collision = detectCollision(objects.player, objects.solids, false);
+    let collision = detectCollision(objects.player, "solids", false);
     if (collision.bottom) {
       objects.player.posy = lastPos[1] + 4;
     }
@@ -471,6 +555,20 @@ function scoreUpdate(value = 0) {
   ctx.fillStyle = gradient;
 
   ctx.fillText("Score: " + score, 20, -20);
+
+  if (editorMode) {
+    // TODO: Move this out of the scoreUpdate function
+    let editorTextWidth = ctx.measureText("Editor Mode --- pres: " + editorPrecision).width;
+    ctx.beginPath();
+    ctx.rect(13, -150, editorTextWidth + 8, 60);
+    ctx.fillStyle = '#222222';
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.fillStyle = gradient;
+
+    ctx.fillText("Editor Mode --- pres: " + editorPrecision, 20, -100);
+  }
   ctx.restore();
 }
 
@@ -494,7 +592,7 @@ function switchAnimation(entity, animationID, animationSpeed = config.defaultAni
 
 function playerMovementGravity(player) {
   // return;
-  moveValues = player.moveValues;
+  let moveValues = player.moveValues;
   moveValues.amount = moveValues.speed;
   let wallJump = false;
 
@@ -502,10 +600,10 @@ function playerMovementGravity(player) {
     moveValues.y -= config.gravity;
   }
 
-  if (moveValues.x > .2) {
-    moveValues.x -= player.touchedGround ? .2 : .01;
-  } else if (moveValues.x < -.2) {
-    moveValues.x += player.touchedGround ? .2 : .01;
+  if (moveValues.x > .1) {
+    moveValues.x -= player.touchedGround ? .15 : .01;
+  } else if (moveValues.x < -.1) {
+    moveValues.x += player.touchedGround ? .15 : .01;
   } else {
     moveValues.x = 0;
   }
@@ -539,7 +637,7 @@ function playerMovementGravity(player) {
     switch (keysDown[i]) {
       case 'dKey':
         // if (wallJump[0] == "left") { return; }
-        moveValues.x = 1;
+        moveValues.x += Math.abs(moveValues.x) > (config.playerMaxSpeed) ? 0 : .25;
         if (player.touchedGround) { switchAnimation(player, 'walkR', 2); }
         playerDirection = 'right';
         break;
@@ -548,7 +646,7 @@ function playerMovementGravity(player) {
         break;
       case 'aKey':
         // if (wallJump[0] == "right") { return; }
-        moveValues.x = -1;
+        moveValues.x -= Math.abs(moveValues.x) > (config.playerMaxSpeed) ? 0 : .25;
         if (player.touchedGround) { switchAnimation(player, 'walkL', 2); }
         playerDirection = 'left';
         break;
@@ -562,8 +660,9 @@ function playerMovementGravity(player) {
     }
   }
 
-  let collisionSolids = detectCollision(player, objects.solids);
-  let collisionLadders = detectCollision(player, objects.ladders);
+  let collisionSolids = detectCollision(player);
+  let collisionLadders = detectCollision(player, "ladders");
+  let collisionTokens = detectCollision(player, "tokens");
 
   if (
     keys.spaceKey &&
@@ -579,14 +678,14 @@ function playerMovementGravity(player) {
       keys.aKey[0] = false;
       wallJump = true;
       playerDirection = "right";
-      scoreUpdate(1000);
+      scoreUpdate(100);
     } else if (collisionSolids.right && keys.dKey[0]) {
       player.touchedGround = true;
       moveValues.x = -1.5;
       keys.dKey[0] = false;
       wallJump = true;
       playerDirection = "left";
-      scoreUpdate(1000);
+      scoreUpdate(100);
     }
   }
   if (keys.aKey[1] && !wallJump && player.touchedGround) { keys.aKey[0] = true; }
@@ -594,8 +693,9 @@ function playerMovementGravity(player) {
   player.height = player.crouched ? player.initHeight / 2 : player.initHeight;
 }
 
-let detectCollision = function (entity, checkArray = [], moveEntity = true) {
+const detectCollision = function (entity, checkArrayName = "solids", moveEntity = true) {
   // TODO: Remove depreciated STOPWALL & FLOOR collision detection
+  let checkArray;
   let splitHitBoxOffset = 3;
   let collision = {
     ladder: false,
@@ -610,135 +710,166 @@ let detectCollision = function (entity, checkArray = [], moveEntity = true) {
     borderRight: false,
     borderLeft: false,
   };
-  if (checkArray == objects.ladders) {
-    for (let i = 0; i < checkArray.length; i++) {
-      if (
-        (
-          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > checkArray[i].posx &&
-          entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
-          entity.posy + entity.height > checkArray[i].posy &&
-          entity.posy < checkArray[i].posy + checkArray[i].height
-        ) || (
-          entity.posx + entity.width > checkArray[i].currentPosx &&
-          entity.posx < checkArray[i].currentPosx + checkArray[i].width &&
-          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= checkArray[i].posy &&
-          entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= checkArray[i].posy + checkArray[i].height
-        )
-      ) {
-        collision.ladder = true;
-        if (moveEntity) {
-          entity.moveValues.y = 1;
-        }
-      }
-    }
-  } else {
-    for (let i = 0; i < checkArray.length; i++) {
-      if (
-        entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > checkArray[i].posx &&
-        entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
-        entity.posy + entity.height - splitHitBoxOffset > checkArray[i].posy &&
-        entity.posy + splitHitBoxOffset < checkArray[i].posy + checkArray[i].height
-      ) {
-        if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
-        if (checkArray[i].mainType == 'borderWallLeft') { collision.borderLeft = true; }
-        if (moveEntity) {
-          entity.posx = checkArray[i].posx + checkArray[i].width + (entity.moveValues.x * entity.moveValues.amount * -1);
-        }
-        collision.left = true;
-        // console.log('left');
-      }
-
-      if (
-        entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > checkArray[i].posx &&
-        entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
-        entity.posy + entity.height - splitHitBoxOffset > checkArray[i].posy &&
-        entity.posy + splitHitBoxOffset < checkArray[i].posy + checkArray[i].height
-      ) {
-        if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
-        if (checkArray[i].mainType == 'borderWallRight') { collision.borderRight = true; }
-        if (moveEntity) {
-          entity.posx = checkArray[i].posx - entity.width + (entity.moveValues.x * entity.moveValues.amount * -1);
-        }
-        collision.right = true;
-        // console.log('right');
-      }
-
-      if (
-        entity.posx + entity.width - splitHitBoxOffset > checkArray[i].posx &&
-        entity.posx + splitHitBoxOffset < checkArray[i].posx + checkArray[i].width &&
-        entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) >= checkArray[i].posy &&
-        entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= checkArray[i].posy + checkArray[i].height
-      ) {
-        if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
-        if (checkArray[i].mainType == 'borderWallBottom') { collision.borderBottom = true; }
-        else if (entity == objects.player) {
-          if (moveEntity) {
-            entity.touchedGround = true;
+  switch (checkArrayName) {
+    case "ladders":
+      checkArray = objects.ladders;
+      length = checkArray.length;
+      if (length <= 0) { break; }
+      if (checkArray.length)
+        for (let i = 0; i < checkArray.length; i++) {
+          const ladder = checkArray[i];
+          if (
+            (
+              entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > ladder.posx &&
+              entity.posx + (entity.moveValues.x * entity.moveValues.amount) < ladder.posx + ladder.width &&
+              entity.posy + entity.height > ladder.posy &&
+              entity.posy < ladder.posy + ladder.height
+            ) || (
+              entity.posx + entity.width > ladder.currentPosx &&
+              entity.posx < ladder.currentPosx + ladder.width &&
+              entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= ladder.posy &&
+              entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= ladder.posy + ladder.height
+            )
+          ) {
+            collision.ladder = true;
+            if (moveEntity) {
+              entity.moveValues.y = 1;
+            }
           }
         }
-        if (moveEntity) {
-          entity.posy = checkArray[i].posy + checkArray[i].height + (entity.moveValues.y * entity.moveValues.amount * (collision.borderBottom ? -1.1 : -1));
-        }
-        collision.bottom = true;
-      }
-
-      if (
-        entity.posx + entity.width - splitHitBoxOffset > checkArray[i].posx &&
-        entity.posx + splitHitBoxOffset < checkArray[i].posx + checkArray[i].width &&
-        entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= checkArray[i].posy &&
-        entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) <= checkArray[i].posy + checkArray[i].height
-      ) {
-        if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
-        if (checkArray[i].mainType == 'borderWallTop') { collision.borderTop = true; }
-        if (moveEntity) {
-          entity.posy = checkArray[i].posy - entity.height + (entity.moveValues.y * entity.moveValues.amount * (collision.borderTop ? -1.1 : -1));
-        }
-        collision.top = true;
-        // console.log('top');
-      }
-
-      if (entity == objects.player && moveEntity) {
+      break;
+    case "tokens":
+      checkArray = objects.tokens;
+      length = checkArray.length;
+      if (length <= 0) { break; }
+      for (let i = 0; i < checkArray.length; i++) {
+        const token = checkArray[i];
         if (
-          entity.posx + entity.width - splitHitBoxOffset > checkArray[i].posx &&
-          entity.posx + splitHitBoxOffset < checkArray[i].posx + checkArray[i].width &&
-          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.initHeight >= checkArray[i].posy &&
-          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.initHeight / 2) <= checkArray[i].posy + checkArray[i].height
+          (
+            entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > token.posx &&
+            entity.posx + (entity.moveValues.x * entity.moveValues.amount) < token.posx + token.width &&
+            entity.posy + entity.height > token.posy &&
+            entity.posy < token.posy + token.height
+          ) || (
+            entity.posx + entity.width > token.currentPosx &&
+            entity.posx < token.currentPosx + token.width &&
+            entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= token.posy &&
+            entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= token.posy + token.height
+          )
         ) {
-          if (checkArray[i].mainType == 'stopWall') { collision.stopWall = true; }
-          if (checkArray[i].mainType == 'borderWallTop') { collision.borderTop = true; }
-          entity.crouched = true;
+          scoreUpdate(10000);
+          objects.remove(token);
         }
       }
-    }
-    // if (
-    //   entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > checkArray[i].posx &&
-    //   entity.posx + (entity.moveValues.x * entity.moveValues.amount) < checkArray[i].posx + checkArray[i].width &&
-    //   entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) >= checkArray[i].posy &&
-    //   entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= checkArray[i].posy + checkArray[i].height
-    // ) {
-    //   console.log('help');
-    // }
-    if (moveEntity) {
-      if (entity == objects.player) {
-        scrollOffsetAdjustment.x = scrollOffsetAdjustment.y = 0;
+      break;
+    case "solids":
+      checkArray = objects.solids;
+      length = checkArray.length;
+      if (length <= 0) { break; }
+      for (let i = 0; i < checkArray.length; i++) {
+        const solid = checkArray[i];
+        if (
+          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > solid.posx &&
+          entity.posx + (entity.moveValues.x * entity.moveValues.amount) < solid.posx + solid.width &&
+          entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
+          entity.posy + splitHitBoxOffset < solid.posy + solid.height
+        ) {
+          if (solid.mainType == 'stopWall') { collision.stopWall = true; }
+          if (solid.mainType == 'borderWallLeft') { collision.borderLeft = true; }
+          if (moveEntity) {
+            entity.posx = solid.posx + solid.width + (entity.moveValues.x * entity.moveValues.amount * -1);
+          }
+          collision.left = true;
+          // console.log('left');
+        }
 
-        if (collision.borderLeft) {
-          scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1.1;
+        if (
+          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > solid.posx &&
+          entity.posx + (entity.moveValues.x * entity.moveValues.amount) < solid.posx + solid.width &&
+          entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
+          entity.posy + splitHitBoxOffset < solid.posy + solid.height
+        ) {
+          if (solid.mainType == 'stopWall') { collision.stopWall = true; }
+          if (solid.mainType == 'borderWallRight') { collision.borderRight = true; }
+          if (moveEntity) {
+            entity.posx = solid.posx - entity.width + (entity.moveValues.x * entity.moveValues.amount * -1);
+          }
+          collision.right = true;
+          // console.log('right');
         }
-        if (collision.borderRight) {
-          scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1.1;
+
+        if (
+          entity.posx + entity.width - splitHitBoxOffset > solid.posx &&
+          entity.posx + splitHitBoxOffset < solid.posx + solid.width &&
+          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) >= solid.posy &&
+          entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= solid.posy + solid.height
+        ) {
+          if (solid.mainType == 'stopWall') { collision.stopWall = true; }
+          if (solid.mainType == 'borderWallBottom') { collision.borderBottom = true; }
+          else if (entity == objects.player) {
+            if (moveEntity) {
+              entity.touchedGround = true;
+            }
+          }
+          if (moveEntity) {
+            entity.posy = solid.posy + solid.height + (entity.moveValues.y * entity.moveValues.amount * (collision.borderBottom ? -1.1 : -1));
+          }
+          collision.bottom = true;
         }
-        if (collision.borderTop) {
-          scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1.1;
+
+        if (
+          entity.posx + entity.width - splitHitBoxOffset > solid.posx &&
+          entity.posx + splitHitBoxOffset < solid.posx + solid.width &&
+          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= solid.posy &&
+          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) <= solid.posy + solid.height
+        ) {
+          if (solid.mainType == 'stopWall') { collision.stopWall = true; }
+          if (solid.mainType == 'borderWallTop') { collision.borderTop = true; }
+          if (moveEntity) {
+            entity.posy = solid.posy - entity.height + (entity.moveValues.y * entity.moveValues.amount * (collision.borderTop ? -1.1 : -1));
+          }
+          collision.top = true;
+          // console.log('top');
         }
-        if (collision.borderBottom) {
-          scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1.1;
+
+        if (entity == objects.player && moveEntity) {
+          if (
+            entity.posx + entity.width - splitHitBoxOffset > solid.posx &&
+            entity.posx + splitHitBoxOffset < solid.posx + solid.width &&
+            entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.initHeight >= solid.posy &&
+            entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.initHeight / 2) <= solid.posy + solid.height
+          ) {
+            if (solid.mainType == 'stopWall') { collision.stopWall = true; }
+            if (solid.mainType == 'borderWallTop') { collision.borderTop = true; }
+            entity.crouched = true;
+          }
         }
       }
-    }
+
+      if (moveEntity) {
+        if (entity == objects.player) {
+          scrollOffsetAdjustment.x = scrollOffsetAdjustment.y = 0;
+
+          if (collision.borderLeft) {
+            scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1.1;
+          }
+          if (collision.borderRight) {
+            scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1.1;
+          }
+          if (collision.borderTop) {
+            scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1.1;
+          }
+          if (collision.borderBottom) {
+            scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1.1;
+          }
+        }
+      }
+
+      collision.border = collision.borderLeft || collision.borderRight || collision.borderTop || collision.borderBottom;
+      break;
+    default:
+      break;
   }
-
-  collision.border = collision.borderLeft || collision.borderRight || collision.borderTop || collision.borderBottom;
 
   // console.log(collision);
   return collision;
@@ -746,8 +877,8 @@ let detectCollision = function (entity, checkArray = [], moveEntity = true) {
 
 function makeDefaultEntities() {
   const borderThickness = config.borderThickness;
-  let borderColor = config.debugMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0)';
-  let defaultEntities = [
+  const borderColor = config.debugMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0)';
+  const defaultEntities = [
     {
       "width": 1000000, "height": 600,
       "initPosx": -600, "initPosy": -560,
@@ -783,15 +914,20 @@ function makeDefaultEntities() {
       "initPosx": canvas.width - borderThickness - 150, "initPosy": 0,
       "styles": ["draw", borderColor],
       "types": ["borderWallRight", "border", "solid", "frozen"]
-    },
-
+    }
   ];
   loadMap(null, false, defaultEntities);
 }
 
 function loadMap(mapID = "init", clearMap = true, mapArray = null) {
   if (clearMap) {
-    objects = { player: null, origin: null, img: [], solids: [], ladders: [], frozen: [], nonFrozen: [], borders: [] };
+    let keyList = Object.keys(objects);
+    keyList.remove("player");
+    keyList.remove("origin");
+    for (let i = 0; i < keyList.length; i++) {
+      console.log(keyList[i]);
+      objects[keyList[i]] = [];
+    }
   }
 
   // If the function is called with a mapArray use that instead of pulling from the map.json file
@@ -800,22 +936,22 @@ function loadMap(mapID = "init", clearMap = true, mapArray = null) {
 
   for (let i = 0; i < length; i++) {
     new entity(
-      mapObjects[i]["width"], mapObjects[i]["height"],
-      mapObjects[i]["initPosx"], mapObjects[i]["initPosy"],
+      (mapObjects[i]["width"]).round(25), (mapObjects[i]["height"]).round(25),
+      (mapObjects[i]["initPosx"]).round(25), (mapObjects[i]["initPosy"]).round(25),
       mapObjects[i]["styles"],
       mapObjects[i]["types"]
     );
   }
 
   // FIXME: This is apparently deprecated now and should be fixed. But I have no way to stop recursion.
-  if (loadMap.caller.name != "makeDefaultEntities") makeDefaultEntities();
+  if (loadMap.caller.name != "makeDefaultEntities") { makeDefaultEntities(); }
 
   // On loadMap, the game will check if the origin and player are created. If not, it will create them.
   if (!objects.player) {
     objects.player = new entity(100, 200, 310, 310, ['img', 'player', 'idleR'], ['player']);
   }
   if (!objects.origin) {
-    objects.origin = new entity(10, 10, 0, 0, ["draw", config.debugMode ? "#23f" : "rgba(0, 0, 0, 0)"], ["solid"]);
+    objects.origin = new entity(10, 10, 0, 0, ["draw", config.debugMode ? "#1370df" : "rgba(0, 0, 0, 0)"], undefined);
   }
 }
 

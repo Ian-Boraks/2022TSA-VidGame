@@ -31,6 +31,14 @@
 			"initPosy": 1044.6653416746872,
 			"styles": ["draw", "#f370db"],
 			"types": ["solid"]
+		},
+    {
+			"width": 50,
+			"height": 50,
+			"initPosx": 600,
+			"initPosy": 300,
+			"styles": ["draw", "#ff0000"],
+			"types": ["token"]
 		}
 	],
 	"map1": [
