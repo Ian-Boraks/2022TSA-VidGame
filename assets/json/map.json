@@ -75,14 +75,6 @@
 			"types": ["solid"]
 		},
 		{
-			"width": 0,
-			"height": 0,
-			"initPosx": 1381.2210611802925,
-			"initPosy": 890.0058132820019,
-			"styles": ["draw", "#f370db"],
-			"types": ["solid"]
-		},
-		{
 			"width": 322.28719948018215,
 			"height": 150,
 			"initPosx": 1386.5796621182585,

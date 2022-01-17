@@ -1,6 +1,5 @@
 const config = {
   gravityEnabled: true,
-  debugMode: false,
   gravity: .1,
   jumpHeight: 2,
   defaultPlayerSpeed: 7,
@@ -12,6 +11,8 @@ const config = {
   defWidth: 2880,
   defHeight: 1620
 }
+
+let debugMode = false;
 
 let editorPrecision = 35;
 let editorMode = false;
@@ -140,17 +141,20 @@ soundManager.onready(function () {
   soundManager.createSound({
     id: 'backgroundMusic',
     url: '/assets/sound/CHIPTUNE_The_Old_Tower_Inn.mp3',
-    onfinish: function () { playSound('backgroundMusic1'); }
+    onfinish: function () { playSound('backgroundMusic1'); },
+    volume: 90
   });
   soundManager.createSound({
     id: 'backgroundMusic1',
     url: '/assets/sound/CHIPTUNE_Minstrel_Dance.mp3',
-    onfinish: function () { setTimeout(() => { playSound('backgroundMusic2'); }, 2000) }
+    onfinish: function () { setTimeout(() => { playSound('backgroundMusic2'); }, 2000) },
+    volume: 90
   });
   soundManager.createSound({
     id: 'backgroundMusic2',
     url: '/assets/sound/CHIPTUNE_The_Bards_Tale.mp3',
-    onfinish: function () { setTimeout(() => { playSound('backgroundMusic'); }, 2000) }
+    onfinish: function () { setTimeout(() => { playSound('backgroundMusic'); }, 2000) },
+    volume: 90
   });
   soundManager.createSound({
     id: 'trombone',
@@ -315,14 +319,22 @@ function onKeyDown(event) {
       break;
     case 13: //enter
       keys.enterKey[0] = true;
-      editorMode = !editorMode;
-      if (editorMode && debugMode) { drawGrid(editorPrecision); } else {
-        const length = objects.grids.length;
-        for (let i = 0; i < length; i++) {
-          objects.remove(objects.grids[i]);
-        }
+      switch (keys.shiftKey[0]) {
+        case true:
+          debugMode = !debugMode;
+          alert(debugMode ? "debugMode is: on" : "debugMode is: off");
+          break;
+        default:
+          editorMode = !editorMode;
+          if (editorMode && debugMode) { drawGrid(editorPrecision); } else {
+            const length = objects.grids.length;
+            for (let i = 0; i < length; i++) {
+              objects.remove(objects.grids[i]);
+            }
+          }
+          alert(editorMode ? "Editor Mode is: on" : "Editor Mode is: off");
+          break;
       }
-      alert(editorMode ? "Editor Mode is: on" : "Editor Mode is: off");
       window.dispatchEvent(new Event('resize'));
       break;
     case 32: //space
@@ -340,15 +352,14 @@ function onKeyDown(event) {
           objects.solids.pop();
           objects.nonFrozen.pop();
           console.log('removed solid');
-          break;
         } else if (keys.ctrlKey[0] && boxHolder[length - 1]['types'][0] == 'ladder') {
           boxHolder.pop();
           objects.ladders.pop();
           objects.nonFrozen.pop();
           console.log('removed ladder');
-          break;
+        } else {
+          console.log('Error: cannot remove non-solid or non-ladder');
         }
-        console.log('Error: cannot remove non-solid or non-ladder');
       }
       break;
     case 17: //ctrl
@@ -574,7 +585,7 @@ function scoreUpdate(value = 0) {
 
   if (editorMode) {
     // TODO: Move this out of the scoreUpdate function
-    let editorTextWidth = ctx.measureText("Editor Mode --- snap: " + editorPrecision).width;
+    let editorTextWidth = ctx.measureText("Editor Mode --- snap (use [ / ]): " + editorPrecision).width;
     ctx.beginPath();
     ctx.rect(13, -150, editorTextWidth + 8, 60);
     ctx.fillStyle = '#222222';
@@ -583,7 +594,7 @@ function scoreUpdate(value = 0) {
 
     ctx.fillStyle = gradient;
 
-    ctx.fillText("Editor Mode --- snap: " + editorPrecision, 20, -100);
+    ctx.fillText("Editor Mode --- snap (use [ / ]): " + editorPrecision, 20, -100);
   }
   ctx.restore();
 }
@@ -627,7 +638,7 @@ function playerMovementGravity(player) {
   keysDown = keys.getKeysByValue(true);
   keysDown = keysDown.concat(keys.getKeysByValue([true, true]));
 
-  if (keysDown.length == 0 && player.touchedGround) {
+  if (!keys.aKey[1] && !keys.dKey[1] && player.touchedGround) {
     switch (playerDirection) {
       case "right":
         switchAnimation(player, "idleR");
@@ -684,10 +695,12 @@ function playerMovementGravity(player) {
   if (
     keys.spaceKey &&
     !player.touchedGround &&
-    (!collisionSolids.borderLeft && !collisionSolids.borderRight) &&
+    !collisionSolids.borderLeft && 
+    !collisionSolids.borderRight &&
     !collisionLadders.ladder &&
     !keys.sKey[0]
   ) {
+    // FIXME: able to infinite wall jump kinda on border walls
     player.touchedGround = false;
     if (collisionSolids.left && keys.aKey[0]) {
       player.touchedGround = true;
@@ -897,7 +910,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
 
 function makeDefaultEntities() {
   const borderThickness = config.borderThickness;
-  const borderColor = config.debugMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0)';
+  const borderColor = debugMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0)';
   const defaultEntities = [
     {
       "width": 1000000, "height": 600,
@@ -936,6 +949,15 @@ function makeDefaultEntities() {
       "types": ["borderWallRight", "border", "solid", "frozen"]
     }
   ];
+
+  // On the creation of default entities, the game will check if the origin and player are created. If not, it will create them.
+  if (!objects.player) {
+    objects.player = new entity(100, 200, 310, 310, ['img', 'player', 'idleR'], ['player']);
+  }
+  if (!objects.origin) {
+    objects.origin = new entity(10, 10, 0, 0, ["draw", debugMode ? "#1370df" : "rgba(0, 0, 0, 0)"], undefined);
+  }
+
   loadMap(null, false, defaultEntities);
 }
 
@@ -947,30 +969,33 @@ function loadMap(mapID = "init", clearMap = true, mapArray = null) {
     for (let i = 0; i < keyList.length; i++) {
       objects[keyList[i]] = [];
     }
+    objects.player = null;
+    objects.origin = null;
   }
 
   // If the function is called with a mapArray use that instead of pulling from the map.json file
+  // This is mainly used for loading the default entities
   let mapObjects = mapArray ? mapArray : map[mapID];
   let length = mapArray ? mapArray.length : Object.keys(mapObjects).length;
+  let loadMapPrecision = 25;
 
   for (let i = 0; i < length; i++) {
     new entity(
-      (mapObjects[i]["width"]).round(25), (mapObjects[i]["height"]).round(25),
-      (mapObjects[i]["initPosx"]).round(25), (mapObjects[i]["initPosy"]).round(25),
+      (mapObjects[i]["width"] > loadMapPrecision ? mapObjects[i]["width"] : loadMapPrecision).round(loadMapPrecision),
+      (mapObjects[i]["height"] > loadMapPrecision ? mapObjects[i]["height"] : loadMapPrecision).round(loadMapPrecision),
+      (mapObjects[i]["initPosx"]).round(loadMapPrecision),
+      (mapObjects[i]["initPosy"]).round(loadMapPrecision),
       mapObjects[i]["styles"],
       mapObjects[i]["types"]
     );
   }
 
   // FIXME: This is apparently deprecated now and should be fixed. But I have no way to stop recursion.
-  if (loadMap.caller.name != "makeDefaultEntities") { makeDefaultEntities(); }
-
-  // On loadMap, the game will check if the origin and player are created. If not, it will create them.
-  if (!objects.player) {
-    objects.player = new entity(100, 200, 310, 310, ['img', 'player', 'idleR'], ['player']);
-  }
-  if (!objects.origin) {
-    objects.origin = new entity(10, 10, 0, 0, ["draw", config.debugMode ? "#1370df" : "rgba(0, 0, 0, 0)"], undefined);
+  try {
+    if (loadMap.caller.name != "makeDefaultEntities") { makeDefaultEntities(); }
+  } catch (TypeError) {
+    makeDefaultEntities();
+    throw "TypeError:\nRecursion is not allowed check failed, making default entities";
   }
 }
 
