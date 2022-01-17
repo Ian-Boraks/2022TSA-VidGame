@@ -156,6 +156,22 @@ soundManager.onready(function () {
     id: 'trombone',
     url: '/assets/sound/FX68GWY-funny-trombone-slide-accent.mp3',
   });
+  soundManager.createSound({
+    id: 'pickUp',
+    url: '/assets/sound/mixkit-arcade-mechanical-bling-210.wav',
+    volume: 50
+  });
+  soundManager.createSound({
+    id: 'jump',
+    url: '/assets/sound/mixkit-player-jumping-in-a-video-game-2043.wav',
+    volume: 50
+  });
+  soundManager.createSound({
+    id: 'wallJump',
+    url: '/assets/sound/mixkit-video-game-spin-jump-2648.wav',
+    volume: 50,
+    autoLoad: false
+  });
 });
 
 // * CLASSES ----------------------------------------------------------
@@ -453,8 +469,8 @@ function getMousePosition(canvas, start, event) {
           "height": Math.abs(endBox.y - startBox.y).round(editorPrecision),
           "initPosx": Math.min(startBox.x, endBox.x).round(editorPrecision),
           "initPosy": Math.min(startBox.y, endBox.y).round(editorPrecision),
-          "styles": keys.shiftKey ? ["draw", "#2370db"] : ["draw", "#f370db"],
-          "types": keys.shiftKey ? ["ladder"] : ["solid"]
+          "styles": keys.shiftKey[0] ? ["draw", "#2370db"] : ["draw", "#f370db"],
+          "types": keys.shiftKey[0] ? ["ladder"] : ["solid"]
         }
       );
       new entity(
@@ -558,7 +574,7 @@ function scoreUpdate(value = 0) {
 
   if (editorMode) {
     // TODO: Move this out of the scoreUpdate function
-    let editorTextWidth = ctx.measureText("Editor Mode --- pres: " + editorPrecision).width;
+    let editorTextWidth = ctx.measureText("Editor Mode --- snap: " + editorPrecision).width;
     ctx.beginPath();
     ctx.rect(13, -150, editorTextWidth + 8, 60);
     ctx.fillStyle = '#222222';
@@ -567,7 +583,7 @@ function scoreUpdate(value = 0) {
 
     ctx.fillStyle = gradient;
 
-    ctx.fillText("Editor Mode --- pres: " + editorPrecision, 20, -100);
+    ctx.fillText("Editor Mode --- snap: " + editorPrecision, 20, -100);
   }
   ctx.restore();
 }
@@ -653,6 +669,7 @@ function playerMovementGravity(player) {
       case 'spaceKey':
         if (player.touchedGround) {
           player.touchedGround = false;
+          playSound('jump');
           moveValues.y = config.jumpHeight;
         }
       default:
@@ -678,6 +695,7 @@ function playerMovementGravity(player) {
       keys.aKey[0] = false;
       wallJump = true;
       playerDirection = "right";
+      // playSound('wallJump');
       scoreUpdate(100);
     } else if (collisionSolids.right && keys.dKey[0]) {
       player.touchedGround = true;
@@ -685,6 +703,7 @@ function playerMovementGravity(player) {
       keys.dKey[0] = false;
       wallJump = true;
       playerDirection = "left";
+      // playSound('wallJump');
       scoreUpdate(100);
     }
   }
@@ -759,6 +778,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         ) {
           scoreUpdate(10000);
           objects.remove(token);
+          playSound('pickUp');
         }
       }
       break;
@@ -925,7 +945,6 @@ function loadMap(mapID = "init", clearMap = true, mapArray = null) {
     keyList.remove("player");
     keyList.remove("origin");
     for (let i = 0; i < keyList.length; i++) {
-      console.log(keyList[i]);
       objects[keyList[i]] = [];
     }
   }
