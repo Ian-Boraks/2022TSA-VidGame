@@ -137,7 +137,7 @@ soundManager.defaultOptions = {
 }
 soundManager.onready(function () {
   // ! All sound effects need to be loaded with this function before they can be played
-  // Music: https://www.chosic.com/free-music/all/ 
+  // Music: https://www.chosic.com/free-music/all/
   soundManager.createSound({
     id: 'backgroundMusic',
     url: '/assets/sound/CHIPTUNE_The_Old_Tower_Inn.mp3',
@@ -695,7 +695,7 @@ function playerMovementGravity(player) {
   if (
     keys.spaceKey &&
     !player.touchedGround &&
-    !collisionSolids.borderLeft && 
+    !collisionSolids.borderLeft &&
     !collisionSolids.borderRight &&
     !collisionLadders.ladder &&
     !keys.sKey[0]
