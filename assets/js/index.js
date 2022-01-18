@@ -319,7 +319,6 @@ Array.prototype.removeArray = function (what) {
 
 Object.prototype.removeDict = function (what) {
   let keyList = Object.keys(this);
-  console.log(what);
   if (this == objects) {
     keyList.removeArray("player");
     keyList.removeArray("origin");
@@ -659,9 +658,9 @@ function scoreUpdate(value = 0) {
   if (score < 0) { score = 0; }
   let textWidth = ctx.measureText("Score: " + score.round(1, true)).width;
 
-  gradient.addColorStop("0", " magenta");
+  gradient.addColorStop("0", "pink");
   gradient.addColorStop("0.1", "cyan");
-  gradient.addColorStop("0.5", "blue");
+  gradient.addColorStop("0.5", "lightblue");
   gradient.addColorStop("1.0", "red");
 
   ctx.save();
@@ -679,16 +678,20 @@ function scoreUpdate(value = 0) {
 
   if (editorMode) {
     // TODO: Move this out of the scoreUpdate function
-    let editorTextWidth = ctx.measureText("Editor Mode --- snap (use [ / ]): " + editorPrecision).width;
+    let editorTextWidth1 = ctx.measureText("Editor Mode -- snap (use [ / ]): " + editorPrecision).width;
+    let editorTextWidth2 = ctx.measureText("Hold # to change type -- 1: ladder, 2: trap, 3: token").width;
+    let editorTextWidth = Math.max(editorTextWidth1, editorTextWidth2);
+
     ctx.beginPath();
-    ctx.rect(13, -150, editorTextWidth + 8, 60);
+    ctx.rect(13, -210, editorTextWidth + 8, 120);
     ctx.fillStyle = '#222222';
     ctx.fill();
     ctx.closePath();
 
     ctx.fillStyle = gradient;
 
-    ctx.fillText("Editor Mode --- snap (use [ / ]): " + editorPrecision, 20, -100);
+    ctx.fillText("Editor Mode -- snap (use [ / ]): " + editorPrecision, 20, -100);
+    ctx.fillText("Hold # to change type -- 1: ladder, 2: trap, 3: token", 20, -160);
   }
   ctx.restore();
 }
