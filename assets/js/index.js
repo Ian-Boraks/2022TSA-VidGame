@@ -19,6 +19,7 @@ let editorMode = false;
 let startBox = { x: 0, y: 0 };
 let endBox = { x: 0, y: 0 };
 let boxHolder = [];
+let typeOfEntity = 'solid';
 
 let map = {};
 let spriteSheets = {};
@@ -57,6 +58,7 @@ var scrollOffsetTotal = {
 let lastMove = [];
 let lastPos = [];
 let respawning = false;
+let wallJumpAllowed = false;
 
 let backgroundMusicPlaying = false;
 let score = 0;
@@ -352,23 +354,26 @@ function getMousePosition(canvas, start, event) {
         "types": [],
       }
 
-      if (keys.oneKey[0]) {
-        boxTemp["styles"] = ["draw", "#2370db"];
-        boxTemp["types"] = ["ladder"];
-      } else if (keys.twoKey[0]) {
-        boxTemp["styles"] = ["draw", "#f56042"];
-        boxTemp["types"] = ["trap"];
-      } else if (keys.threeKey[0]) {
-
-        boxTemp["styles"] = ["draw", "#42f5a1"];
-        boxTemp["types"] = ["token"];
-
-      } else if (keys.fourKey[0]) {
-        boxTemp["styles"] = ["draw", "#42f5a1"];
-        boxTemp["types"] = ["token"];
-      } else {
-        boxTemp["styles"] = ["draw", "#f370db"];
-        boxTemp["types"] = ["solid"];
+      switch (typeOfEntity) {
+        case 'solid':
+          boxTemp["styles"] = ["draw", "#f370db"];
+          boxTemp["types"] = ["solid"];
+          break;
+        case 'ladder':
+          boxTemp["styles"] = ["draw", "#2370db"];
+          boxTemp["types"] = ["ladder"];
+          break;
+        case 'trap':
+          boxTemp["styles"] = ["draw", "#f56042"];
+          boxTemp["types"] = ["trap"];
+          break;
+        case 'token':
+          boxTemp["styles"] = ["draw", "#42f5a1"];
+          boxTemp["types"] = ["token"];
+          break;
+        default:
+          console.log('Error: entity type not found');
+          break;
       }
 
       boxHolder.push(boxTemp);
@@ -624,7 +629,7 @@ function frameUpdate() {
 }
 
 
-const respawn = function () {
+function respawn() {
   objects.removeDict(objects.player);
   objects.player = null;
   const newScrollOffset = {
@@ -677,7 +682,6 @@ function scoreUpdate(value = 0) {
   ctx.fillText("Score: " + score.round(1, true), 20, -20);
 
   if (editorMode) {
-    // TODO: Move this out of the scoreUpdate function
     let editorTextWidth1 = ctx.measureText("Editor Mode -- snap (use [ / ]): " + editorPrecision).width;
     let editorTextWidth2 = ctx.measureText("Hold # to change type -- 1: ladder, 2: trap, 3: token").width;
     let editorTextWidth = Math.max(editorTextWidth1, editorTextWidth2);
@@ -693,6 +697,7 @@ function scoreUpdate(value = 0) {
     ctx.fillText("Editor Mode -- snap (use [ / ]): " + editorPrecision, 20, -100);
     ctx.fillText("Hold # to change type -- 1: ladder, 2: trap, 3: token", 20, -160);
   }
+
   ctx.restore();
 }
 
@@ -779,6 +784,11 @@ function playerMovementGravity(player) {
           player.touchedGround = false;
           playSound('jump');
           moveValues.y = config.jumpHeight;
+          if (!wallJump) {
+            setTimeout(() => {
+              wallJumpAllowed = true;
+            }, 400);
+          }
         }
       default:
         break;
@@ -795,7 +805,8 @@ function playerMovementGravity(player) {
     !player.touchedGround &&
     !collisionSolids.borderLeft &&
     !collisionSolids.borderRight &&
-    !collisionLadders.ladder
+    !collisionLadders.ladder &&
+    wallJumpAllowed
   ) {
     player.touchedGround = false;
     if (collisionSolids.left && keys.aKey[0]) {
@@ -804,6 +815,7 @@ function playerMovementGravity(player) {
       keys.aKey[0] = false;
       wallJump = true;
       playerDirection = "right";
+      wallJumpAllowed = true;
       // playSound('wallJump');
       scoreUpdate(100);
     } else if (collisionSolids.right && keys.dKey[0]) {
@@ -812,12 +824,13 @@ function playerMovementGravity(player) {
       keys.dKey[0] = false;
       wallJump = true;
       playerDirection = "left";
+      wallJumpAllowed = true;
       // playSound('wallJump');
       scoreUpdate(100);
     }
   }
-  if (keys.aKey[1] && !wallJump && player.touchedGround) { keys.aKey[0] = true; }
-  if (keys.dKey[1] && !wallJump && player.touchedGround) { keys.dKey[0] = true; }
+  if (keys.aKey[1] && !wallJump && player.touchedGround) { keys.aKey[0] = true; wallJumpAllowed = false; }
+  if (keys.dKey[1] && !wallJump && player.touchedGround) { keys.dKey[0] = true; wallJumpAllowed = false; }
   player.height = player.crouched ? player.initHeight / 2 : player.initHeight;
 }
 
