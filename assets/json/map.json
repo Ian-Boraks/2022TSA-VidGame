@@ -3,6 +3,14 @@
 	"test": [
 		{
 			"width": 280,
+			"height": 175,
+			"initPosx": 4305,
+			"initPosy": 35,
+			"styles": ["draw", "#f56042"],
+			"types": ["trap"]
+		},
+		{
+			"width": 280,
 			"height": 245,
 			"initPosx": 910,
 			"initPosy": 35,
@@ -497,7 +505,7 @@
 			"styles": ["draw", "#2370db"],
 			"types": ["ladder"]
 		},
-    {
+		{
 			"width": 560,
 			"height": 35,
 			"initPosx": 7875,
@@ -547,7 +555,7 @@
 			"styles": ["draw", "#42f5a1"],
 			"types": ["token"]
 		},
-    {
+		{
 			"width": 50,
 			"height": 50,
 			"initPosx": 800,

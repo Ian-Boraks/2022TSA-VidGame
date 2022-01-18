@@ -38,23 +38,25 @@ let objects = {
   borders: [],
   tokens: [],
   traps: [],
-  grids: []
+  grids: [],
+  boxHolder: [],
 };
 
 const objectsInit = objects;
 
-let scrollOffsetAdjustment = {
+var scrollOffsetAdjustment = {
   x: 0,
   y: 0
 }
 
-let scrollOffsetTotal = {
+var scrollOffsetTotal = {
   x: 0,
   y: 0
 }
 
 let lastMove = [];
 let lastPos = [];
+let respawning = false;
 
 let backgroundMusicPlaying = false;
 let score = 0;
@@ -181,7 +183,7 @@ soundManager.onready(function () {
   soundManager.createSound({
     id: 'death',
     url: '/assets/sound/163442__under7dude__man-dying.wav',
-    volume: 100
+    volume: 100,
   });
 });
 
@@ -226,6 +228,8 @@ class entity {
       this.touchedGround = false;
       this.lastPos = [undefined, undefined];
       this.lastMove = [undefined, undefined];
+      this.draw();
+      return;
     }
 
     if (types.indexOf('solid') > -1) { objects.solids.push(this); }
@@ -302,28 +306,26 @@ Object.prototype.getKeysByValue = function (selection) {
   return filteredKeysTemp = Object.keys(Object.fromEntries(Object.entries(this).filter((element) => element[1][0] == selection)));
 }
 
-Object.prototype.filterArray = function (value) {
+Array.prototype.filterArray = function (value) {
   return this.filter(function (ele) {
     return ele != value;
   });
 }
 
-Array.prototype.remove = function (what) {
+Array.prototype.removeArray = function (what) {
   const index = this.indexOf(what)
   if (index > -1) { this.splice(index, 1); }
-  else { console.log('Error: element not found'); }
 };
 
-Object.prototype.remove = function (what) {
+Object.prototype.removeDict = function (what) {
   let keyList = Object.keys(this);
+  console.log(what);
   if (this == objects) {
-    keyList.remove("player");
-    keyList.remove("origin");
+    keyList.removeArray("player");
+    keyList.removeArray("origin");
   }
   for (let i = 0; i < keyList.length; i++) {
-    const arrayName = keyList[i];
-    const index = this[arrayName].indexOf(what)
-    if (index > -1) { this[arrayName].splice(index, 1); }
+    this[keyList[i]].removeArray(what);
   }
 };
 
@@ -372,13 +374,15 @@ function getMousePosition(canvas, start, event) {
 
       boxHolder.push(boxTemp);
 
-      new entity(
-        boxHolder.at(-1)["width"],
-        boxHolder.at(-1)["height"],
-        boxHolder.at(-1)["initPosx"] + objects.origin.posx,
-        boxHolder.at(-1)["initPosy"] + objects.origin.posy,
-        boxHolder.at(-1)["styles"],
-        boxHolder.at(-1)["types"]
+      objects.boxHolder.push(
+        new entity(
+          boxHolder.at(-1)["width"],
+          boxHolder.at(-1)["height"],
+          boxHolder.at(-1)["initPosx"] + objects.origin.posx,
+          boxHolder.at(-1)["initPosy"] + objects.origin.posy,
+          boxHolder.at(-1)["styles"],
+          boxHolder.at(-1)["types"]
+        )
       );
     }
   }
@@ -439,39 +443,28 @@ function onKeyDown(event) {
       break;
     case 13: //enter
       keys.enterKey[0] = true;
-      switch (keys.shiftKey[0]) {
-        case true:
-          debugMode = !debugMode;
-          alert(debugMode ? "debugMode is: on" : "debugMode is: off");
-          break;
-        default:
-          editorMode = !editorMode;
-          if (editorMode && debugMode) { drawGrid(editorPrecision); }
-          else if (!editorMode) {
-            const length = objects.grids.length;
-            for (let i = 0; i < length; i++) {
-              objects.remove(objects.grids[i]);
-            }
-            objects.grids = [];
-            console.log(boxHolder);
-          }
-          alert(editorMode ? "Editor Mode is: on" : "Editor Mode is: off");
-          break;
+      editorMode = !editorMode;
+      if (!editorMode) {
+        console.log(boxHolder);
       }
+      alert(editorMode ? "Editor Mode is: on" : "Editor Mode is: off");
       break;
     case 32: //space
       keys.spaceKey[0] = true;
       break;
     case 16: //shift
+      debugMode = !debugMode;
+      window.dispatchEvent(new Event('resize'));
       keys.shiftKey[0] = true;
       break;
     case 90: //z
       keys.zKey[0] = true;
       const length = boxHolder.length;
       if (editorMode && length > 0) {
+        const tempBox = objects.boxHolder[length - 1];
         if (keys.ctrlKey[0]) {
-          objects.remove(boxHolder[length - 1]);
-          // boxHolder.pop();
+          objects.removeDict(tempBox);
+          boxHolder.pop();
         }
       }
       break;
@@ -558,10 +551,11 @@ function onKeyUp(event) {
 
 // * FUNCTIONS --------------------------------------------------------
 var drawGrid = function (size) {
+  throw "drawGrid is not yet implemented";
   // FIXME: Objects drawn in this function are perfect match for grid. But if drawn outside of it, they do not fit perfectly.
   const length = objects.grids.length;
   for (let i = 0; i < length; i++) {
-    objects.nonFrozen.remove(objects.grids[i]);
+    objects.nonFrozen.removeArray(objects.grids[i]);
   }
   objects.grids = [];
   w = canvas.width;
@@ -599,6 +593,7 @@ function frameUpdate() {
       }
       scoreUpdate(-1);
       if (!objects.player) { break; }
+      objects.player.move();
       if (Math.abs(lastPos[0] - objects.player.posx) > config.playerMaxSpeedError || Math.abs(lastPos[1] - objects.player.posy) > config.playerMaxSpeedError) {
         console.log("Player moved too fast");
         objects.player.posx = lastPos[0];
@@ -619,7 +614,6 @@ function frameUpdate() {
         animate(objects.img[i]);
       }
       for (let i = 0; i < objects.nonFrozen.length; i++) {
-        objects.nonFrozen[i].move();
         objects.nonFrozen[i].draw();
       }
       for (let i = 0; i < objects.frozen.length; i++) {
@@ -627,6 +621,34 @@ function frameUpdate() {
       }
       scoreUpdate();
       break;
+  }
+}
+
+
+const respawn = function () {
+  objects.removeDict(objects.player);
+  objects.player = null;
+  const newScrollOffset = {
+    x: scrollOffsetTotal.x,
+    y: scrollOffsetTotal.y
+  };
+  scrollOffsetAdjustment.x = -newScrollOffset.x;
+  scrollOffsetAdjustment.y = -newScrollOffset.y + 261.80000000000007;
+  scrollOffsetTotal.x = 0;
+  scrollOffsetTotal.y = 261.80000000000007;
+  for (let i = 0; i < objects.nonFrozen.length; i++) {
+    objects.nonFrozen[i].move();
+    objects.nonFrozen[i].draw();
+  }
+  for (let i = 0; i < objects.frozen.length; i++) {
+    objects.frozen[i].draw();
+  }
+  scrollOffsetAdjustment.x = 0;
+  scrollOffsetAdjustment.y = 0;
+  if (!objects.player) {
+    setTimeout(() => {
+      objects.player = new entity(100, 200, 310, 310, ['img', 'player', 'idleR'], ['player']);
+    }, 1000);
   }
 }
 
@@ -762,8 +784,8 @@ function playerMovementGravity(player) {
 
   let collisionSolids = detectCollision(player);
   let collisionLadders = detectCollision(player, "ladders");
-  let collisionTokens = detectCollision(player, "tokens");
-  let collisionTraps = detectCollision(player, "traps");
+  let collisionTokens = detectCollision(player, "tokens", false);
+  let collisionTraps = detectCollision(player, "traps", false);
 
   if (
     keys.spaceKey[0] &&
@@ -860,9 +882,8 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           )
         ) {
           scoreUpdate(-5000);
-          objects.remove(trap);
-          objects.remove(objects.player);
-          objects.player = null;
+          objects.removeDict(trap);
+          respawn();
           playSound('death');
         }
       }
@@ -886,7 +907,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           )
         ) {
           scoreUpdate(10000);
-          objects.remove(token);
+          objects.removeDict(token);
           playSound('pickUp');
         }
       }
@@ -991,6 +1012,8 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           if (collision.borderBottom) {
             scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1.1;
           }
+          scrollOffsetTotal.x += scrollOffsetAdjustment.x;
+          scrollOffsetTotal.y += scrollOffsetAdjustment.y;
         }
       }
 
@@ -1061,9 +1084,10 @@ function makeDefaultEntities(justBorders = false) {
 
 function loadMap(mapID = "init", clearMap = true, mapArray = null) {
   if (clearMap) {
+    scrollOffsetTotal = { x: 0, y: 0 };
     let keyList = Object.keys(objects);
-    keyList.remove("player");
-    keyList.remove("origin");
+    keyList.removeArray("player");
+    keyList.removeArray("origin");
     for (let i = 0; i < keyList.length; i++) {
       objects[keyList[i]] = [];
     }
