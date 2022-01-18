@@ -489,15 +489,19 @@ function onKeyDown(event) {
       break;
     case 49: //1
       keys.oneKey[0] = true;
+      typeOfEntity = 'ladder'
       break;
     case 50: //2
       keys.twoKey[0] = true;
+      typeOfEntity = 'trap'
       break;
     case 51: //3
       keys.threeKey[0] = true;
+      typeOfEntity = 'token'
       break;
     case 52: //4
       keys.fourKey[0] = true;
+      typeOfEntity = 'solid'
       break;
   }
 }
@@ -683,7 +687,7 @@ function scoreUpdate(value = 0) {
 
   if (editorMode) {
     let editorTextWidth1 = ctx.measureText("Editor Mode -- snap (use [ / ]): " + editorPrecision).width;
-    let editorTextWidth2 = ctx.measureText("Hold # to change type -- 1: ladder, 2: trap, 3: token").width;
+    let editorTextWidth2 = ctx.measureText("Press # to change type -- 1: ladder, 2: trap, 3: token, 4: Solid -- Current Type: " + typeOfEntity).width;
     let editorTextWidth = Math.max(editorTextWidth1, editorTextWidth2);
 
     ctx.beginPath();
@@ -695,7 +699,7 @@ function scoreUpdate(value = 0) {
     ctx.fillStyle = gradient;
 
     ctx.fillText("Editor Mode -- snap (use [ / ]): " + editorPrecision, 20, -100);
-    ctx.fillText("Hold # to change type -- 1: ladder, 2: trap, 3: token", 20, -160);
+    ctx.fillText("Press # to change type -- 1: ladder, 2: trap, 3: token, 4: Solid -- Current Type: " + typeOfEntity, 20, -160);
   }
 
   ctx.restore();
