@@ -898,8 +898,10 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           )
         ) {
           scoreUpdate(-5000);
-          objects.removeDict(trap);
-          respawn();
+          if (!editorMode) {
+            objects.removeDict(trap);
+            respawn();
+          }
           playSound('death');
         }
       }
@@ -923,7 +925,9 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           )
         ) {
           scoreUpdate(10000);
-          objects.removeDict(token);
+          if (!editorMode) {
+            objects.removeDict(token);
+          }
           playSound('pickUp');
         }
       }
