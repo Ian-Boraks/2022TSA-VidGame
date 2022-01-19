@@ -687,7 +687,26 @@ function scoreUpdate(value = 0) {
 
   if (editorMode) {
     let editorTextWidth1 = ctx.measureText("Editor Mode -- snap (use [ / ]): " + editorPrecision).width;
-    let editorTextWidth2 = ctx.measureText("Press # to change type -- 1: ladder, 2: trap, 3: token, 4: Solid -- Current Type: " + typeOfEntity).width;
+    let editorText2 = "Press # to change type -- "
+    switch (typeOfEntity) {
+      case 'solid':
+        editorText2 += "1: ladder, 2: trap, 3: token, ͇4͇:͇ ͇S͇O͇L͇I͇D͇"
+        break;
+      case 'ladder':
+        editorText2 += " ͇1͇:͇ ͇L͇A͇D͇D͇E͇R͇, 2: trap, 3: token, 4: SOLID"
+        break;
+      case 'trap':
+        editorText2 += "1: ladder, ͇2͇:͇ ͇T͇R͇A͇P͇, 3: token, 4: SOLID"
+        break;
+      case 'token':
+        editorText2 += "1: ladder, 2: trap, ͇3͇:͇ ͇T͇O͇K͇E͇N͇, 4: SOLID"
+        break;
+      default:
+        console.log('Error: entity type not found');
+        break;
+    }
+    let editorTextWidth2 = ctx.measureText(editorText2).width;
+
     let editorTextWidth = Math.max(editorTextWidth1, editorTextWidth2);
 
     ctx.beginPath();
@@ -698,8 +717,8 @@ function scoreUpdate(value = 0) {
 
     ctx.fillStyle = gradient;
 
-    ctx.fillText("Editor Mode -- snap (use [ / ]): " + editorPrecision, 20, -100);
-    ctx.fillText("Press # to change type -- 1: ladder, 2: trap, 3: token, 4: Solid -- Current Type: " + typeOfEntity, 20, -160);
+    ctx.fillText("Editor Mode -- snap (use [ / ]): ", 20, -100);
+    ctx.fillText(editorText2, 20, -160);
   }
 
   ctx.restore();
@@ -936,12 +955,58 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         }
       }
       break;
+    case "slopes":
+      checkArray = objects.slopes;
+      length = checkArray.length;
+      if (length <= 0) { break; }
+      if (
+        entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > solid.posx &&
+        entity.posx + (entity.moveValues.x * entity.moveValues.amount) < solid.posx + solid.width &&
+        entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
+        entity.posy + splitHitBoxOffset < solid.posy + solid.height
+      ) {
+        if (solid.mainType == 'stopWall') { collision.stopWall = true; }
+        if (solid.mainType == 'borderWallLeft') { collision.borderLeft = true; }
+        if (moveEntity) {
+          entity.posx = solid.posx + solid.width + (entity.moveValues.x * entity.moveValues.amount * -1);
+        }
+        collision.left = true;
+        // console.log('left');
+      }
+
+      if (
+        entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > solid.posx &&
+        entity.posx + (entity.moveValues.x * entity.moveValues.amount) < solid.posx + solid.width &&
+        entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
+        entity.posy + splitHitBoxOffset < solid.posy + solid.height
+      ) {
+        if (solid.mainType == 'stopWall') { collision.stopWall = true; }
+        if (solid.mainType == 'borderWallRight') { collision.borderRight = true; }
+        if (moveEntity) {
+          entity.posx = solid.posx - entity.width + (entity.moveValues.x * entity.moveValues.amount * -1);
+        }
+        collision.right = true;
+        // console.log('right');
+      }
+      if (collision.left && moveEntity) {
+        entity.posx = tempEntity.posx;
+        entity.posy = solid.posy + solid.height + 30;
+        entity.moveValues.y = 2;
+        console.log(collision);
+      }
+      if (collision.right && moveEntity) {
+        entity.posx = tempEntity.posx;
+        entity.posy = solid.posy + solid.height + 30;
+        entity.moveValues.y = 2;
+        console.log(collision);
+      }
     case "solids":
       checkArray = objects.solids;
       length = checkArray.length;
       if (length <= 0) { break; }
       for (let i = 0; i < checkArray.length; i++) {
         const solid = checkArray[i];
+        const tempEntity = entity;
         if (
           entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > solid.posx &&
           entity.posx + (entity.moveValues.x * entity.moveValues.amount) < solid.posx + solid.width &&
