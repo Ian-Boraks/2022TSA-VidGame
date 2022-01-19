@@ -33,7 +33,7 @@ let objects = {
   img: [],
   solids: [],
   ladders: [], // FIXME: Ladders can phase you through the ground
-  slopes: [],
+  stairs: [],
   frozen: [],
   nonFrozen: [],
   borders: [],
@@ -59,6 +59,7 @@ let lastMove = [];
 let lastPos = [];
 let respawning = false;
 let wallJumpAllowed = false;
+let playerMovementCheck = true;
 
 let backgroundMusicPlaying = false;
 let score = 0;
@@ -237,7 +238,7 @@ class entity {
     if (types.indexOf('solid') > -1) { objects.solids.push(this); }
     if (types.indexOf('ladder') > -1) { objects.ladders.push(this); }
     if (types.indexOf('frozen') > -1) { objects.frozen.push(this); } else { objects.nonFrozen.push(this); }
-    if (types.indexOf('slope') > -1) { objects.slopes.push(this); }
+    if (types.indexOf('stair') > -1) { objects.stairs.push(this); }
     if (types.indexOf('border') > -1) { objects.borders.push(this); }
     if (types.indexOf('token') > -1) { objects.tokens.push(this); }
     if (types.indexOf('grid') > -1) { objects.grids.push(this); }
@@ -371,6 +372,10 @@ function getMousePosition(canvas, start, event) {
           boxTemp["styles"] = ["draw", "#42f5a1"];
           boxTemp["types"] = ["token"];
           break;
+        case 'stair':
+          boxTemp["styles"] = ["draw", "#f2f5a1"];
+          boxTemp["types"] = ["solid", "stair"];
+          break;
         default:
           console.log('Error: entity type not found');
           break;
@@ -416,6 +421,7 @@ var keys = {
   twoKey: [false],
   threeKey: [false],
   fourKey: [false],
+  fiveKey: [false],
 };
 
 function onKeyDown(event) {
@@ -503,6 +509,10 @@ function onKeyDown(event) {
       keys.fourKey[0] = true;
       typeOfEntity = 'solid'
       break;
+    case 53: //5
+      keys.fiveKey[0] = true;
+      typeOfEntity = 'stair'
+      break
   }
 }
 
@@ -554,6 +564,9 @@ function onKeyUp(event) {
     case 52: //4
       keys.fourKey[0] = false;
       break;
+    case 53: //5
+      keys.fiveKey[0] = false;
+      break;
   }
 }
 
@@ -602,7 +615,10 @@ function frameUpdate() {
       scoreUpdate(-1);
       if (!objects.player) { break; }
       objects.player.move();
-      if (Math.abs(lastPos[0] - objects.player.posx) > config.playerMaxSpeedError || Math.abs(lastPos[1] - objects.player.posy) > config.playerMaxSpeedError) {
+      if (
+        playerMovementCheck &&
+        (Math.abs(lastPos[0] - objects.player.posx) > config.playerMaxSpeedError || Math.abs(lastPos[1] - objects.player.posy) > config.playerMaxSpeedError)
+      ) {
         console.log("Player moved too fast");
         objects.player.posx = lastPos[0];
         objects.player.posy = lastPos[1];
@@ -614,6 +630,7 @@ function frameUpdate() {
           objects.player.posy = lastPos[1] - 4;
         }
       }
+      playerMovementCheck = true;
       objects.player.draw();
       break;
     default:
@@ -631,7 +648,6 @@ function frameUpdate() {
       break;
   }
 }
-
 
 function respawn() {
   objects.removeDict(objects.player);
@@ -689,17 +705,20 @@ function scoreUpdate(value = 0) {
     let editorTextWidth1 = ctx.measureText("Editor Mode -- snap (use [ / ]): " + editorPrecision).width;
     let editorText2 = "Press # to change type -- "
     switch (typeOfEntity) {
-      case 'solid':
-        editorText2 += "1: ladder, 2: trap, 3: token, ͇4͇:͇ ͇S͇O͇L͇I͇D͇"
-        break;
       case 'ladder':
-        editorText2 += " ͇1͇:͇ ͇L͇A͇D͇D͇E͇R͇, 2: trap, 3: token, 4: SOLID"
+        editorText2 += " ͇1͇:͇ ͇L͇A͇D͇D͇E͇R͇, 2: TRAP, 3: TOKEN, 4: SOLID, 5: STAIRS"
         break;
       case 'trap':
-        editorText2 += "1: ladder, ͇2͇:͇ ͇T͇R͇A͇P͇, 3: token, 4: SOLID"
+        editorText2 += "1: LADDER, ͇2͇:͇ ͇T͇R͇A͇P͇, 3: TOKEN, 4: SOLID, 5: STAIRS"
         break;
       case 'token':
-        editorText2 += "1: ladder, 2: trap, ͇3͇:͇ ͇T͇O͇K͇E͇N͇, 4: SOLID"
+        editorText2 += "1: LADDER, 2: TRAP, ͇3͇:͇ ͇T͇O͇K͇E͇N͇, 4: SOLID, 5: STAIRS"
+        break;
+      case 'solid':
+        editorText2 += "1: LADDER, 2: TRAP, 3: TOKEN, ͇4͇:͇ ͇S͇O͇L͇I͇D͇, 5: STAIRS"
+        break;
+      case 'stair':
+        editorText2 += "1: LADDER, 2: TRAP, 3: TOKEN, 4: SOLID, ͇5̳:̳ ̳S̳T̳A̳I̳R̳"
         break;
       default:
         console.log('Error: entity type not found');
@@ -820,8 +839,8 @@ function playerMovementGravity(player) {
 
   let collisionSolids = detectCollision(player);
   let collisionLadders = detectCollision(player, "ladders");
-  let collisionTokens = detectCollision(player, "tokens", false);
-  let collisionTraps = detectCollision(player, "traps", false);
+  void detectCollision(player, "tokens", false);
+  void detectCollision(player, "traps", false);
 
   if (
     keys.spaceKey[0] &&
@@ -863,6 +882,9 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
   let splitHitBoxOffset = 3;
   let collision = {
     ladder: false,
+    stairLeft: false,
+    stairRight: false,
+    stairScroll: false,
 
     top: false,
     bottom: false,
@@ -877,7 +899,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
   switch (checkArrayName) {
     case "ladders":
       checkArray = objects.ladders;
-      length = checkArray.length;
+      length = length;
       if (length <= 0) { break; }
       for (let i = 0; i < checkArray.length; i++) {
         const ladder = checkArray[i];
@@ -905,7 +927,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       checkArray = objects.traps;
       length = checkArray.length;
       if (length <= 0) { break; }
-      for (let i = 0; i < checkArray.length; i++) {
+      for (let i = 0; i < length; i++) {
         const trap = checkArray[i];
         if (
           (
@@ -914,7 +936,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
             entity.posy + entity.height > trap.posy &&
             entity.posy < trap.posy + trap.height
           ) || (
-            entity.posx + entity.width > trap.currentPosx &&
+            entity.posx + entity.width > trap.posx &&
             entity.posx < trap.currentPosx + trap.width &&
             entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= trap.posy &&
             entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= trap.posy + trap.height
@@ -932,7 +954,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       checkArray = objects.tokens;
       length = checkArray.length;
       if (length <= 0) { break; }
-      for (let i = 0; i < checkArray.length; i++) {
+      for (let i = 0; i < length; i++) {
         const token = checkArray[i];
         if (
           (
@@ -941,7 +963,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
             entity.posy + entity.height > token.posy &&
             entity.posy < token.posy + token.height
           ) || (
-            entity.posx + entity.width > token.currentPosx &&
+            entity.posx + entity.width > token.posx &&
             entity.posx < token.currentPosx + token.width &&
             entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= token.posy &&
             entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= token.posy + token.height
@@ -955,58 +977,77 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         }
       }
       break;
-    case "slopes":
-      checkArray = objects.slopes;
+    case "stairs":
+      const borderArray = objects.borders
+      const borderLength = borderArray.length;
+      checkArray = objects.stairs;
       length = checkArray.length;
       if (length <= 0) { break; }
-      if (
-        entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > solid.posx &&
-        entity.posx + (entity.moveValues.x * entity.moveValues.amount) < solid.posx + solid.width &&
-        entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
-        entity.posy + splitHitBoxOffset < solid.posy + solid.height
-      ) {
-        if (solid.mainType == 'stopWall') { collision.stopWall = true; }
-        if (solid.mainType == 'borderWallLeft') { collision.borderLeft = true; }
-        if (moveEntity) {
-          entity.posx = solid.posx + solid.width + (entity.moveValues.x * entity.moveValues.amount * -1);
-        }
-        collision.left = true;
-        // console.log('left');
-      }
+      for (let i = 0; i < length; i++) {
+        let stair = checkArray[i];
+        if (
+          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > stair.posx &&
+          entity.posx + (entity.moveValues.x * entity.moveValues.amount) < stair.posx + stair.width &&
+          entity.posy + entity.height > stair.posy &&
+          entity.posy < stair.posy + stair.height
+        ) { collision.left = true; }
 
-      if (
-        entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > solid.posx &&
-        entity.posx + (entity.moveValues.x * entity.moveValues.amount) < solid.posx + solid.width &&
-        entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
-        entity.posy + splitHitBoxOffset < solid.posy + solid.height
-      ) {
-        if (solid.mainType == 'stopWall') { collision.stopWall = true; }
-        if (solid.mainType == 'borderWallRight') { collision.borderRight = true; }
-        if (moveEntity) {
-          entity.posx = solid.posx - entity.width + (entity.moveValues.x * entity.moveValues.amount * -1);
+        if (
+          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > stair.posx &&
+          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 < stair.posx + stair.width &&
+          entity.posy + entity.height > stair.posy &&
+          entity.posy < stair.posy + stair.height
+        ) { collision.right = true; }
+
+        if (
+          entity.posx + entity.width + 20 > stair.posx &&
+          entity.posx - 20 < stair.posx + stair.width &&
+          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= stair.posy &&
+          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) <= stair.posy + stair.height
+        ) { collision.top = true; }
+
+        if (moveEntity && collision.left && entity.touchedGround && !collision.top) {
+          collision.stairLeft = true;
+          playerMovementCheck = false;
+          entity.posx = stair.posx + stair.width + (entity.moveValues.x * entity.moveValues.amount);
+          entity.posy = stair.posy + stair.height;
         }
-        collision.right = true;
-        // console.log('right');
+        if (moveEntity && collision.right && entity.touchedGround && !collision.top) {
+          collision.stairRight = true;
+          playerMovementCheck = false;
+          entity.posx = stair.posx - entity.width + (entity.moveValues.x * entity.moveValues.amount);
+          entity.posy = stair.posy + stair.height;
+        }
+        if (collision.stairRight || collision.stairLeft) {
+          for (let i = 0; i < borderLength; i++) {
+            const border = borderArray[i];
+            if (
+              entity.posx + entity.width - splitHitBoxOffset > border.posx &&
+              entity.posx + splitHitBoxOffset < border.posx + border.width &&
+              entity.posy + entity.height >= border.posy &&
+              entity.posy + (entity.height / 2) <= border.posy + border.height
+            ) {
+              // TODO: Make this actually good
+              scrollOffsetAdjustment.y = lastPos[1] - entity.posy;
+              // scrollOffsetAdjustment.x = lastPos[0] - entity.posx;
+              scrollOffsetTotal.x += scrollOffsetAdjustment.x;
+              // scrollOffsetTotal.y += scrollOffsetAdjustment.y;
+              objects.player.posx = lastPos[0];
+              objects.player.posy = lastPos[1];
+              collision.stairScroll = true;
+            }
+          }
+          break;
+        }
       }
-      if (collision.left && moveEntity) {
-        entity.posx = tempEntity.posx;
-        entity.posy = solid.posy + solid.height + 30;
-        entity.moveValues.y = 2;
-        console.log(collision);
-      }
-      if (collision.right && moveEntity) {
-        entity.posx = tempEntity.posx;
-        entity.posy = solid.posy + solid.height + 30;
-        entity.moveValues.y = 2;
-        console.log(collision);
-      }
+      break;
     case "solids":
+      const collisionStairs = detectCollision(entity, 'stairs', moveEntity);
       checkArray = objects.solids;
       length = checkArray.length;
       if (length <= 0) { break; }
-      for (let i = 0; i < checkArray.length; i++) {
+      for (let i = 0; i < length; i++) {
         const solid = checkArray[i];
-        const tempEntity = entity;
         if (
           entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > solid.posx &&
           entity.posx + (entity.moveValues.x * entity.moveValues.amount) < solid.posx + solid.width &&
@@ -1015,7 +1056,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         ) {
           if (solid.mainType == 'stopWall') { collision.stopWall = true; }
           if (solid.mainType == 'borderWallLeft') { collision.borderLeft = true; }
-          if (moveEntity) {
+          if (moveEntity && !collisionStairs.stairLeft) {
             entity.posx = solid.posx + solid.width + (entity.moveValues.x * entity.moveValues.amount * -1);
           }
           collision.left = true;
@@ -1024,13 +1065,13 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
 
         if (
           entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > solid.posx &&
-          entity.posx + (entity.moveValues.x * entity.moveValues.amount) < solid.posx + solid.width &&
+          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 < solid.posx + solid.width &&
           entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
           entity.posy + splitHitBoxOffset < solid.posy + solid.height
         ) {
           if (solid.mainType == 'stopWall') { collision.stopWall = true; }
           if (solid.mainType == 'borderWallRight') { collision.borderRight = true; }
-          if (moveEntity) {
+          if (moveEntity && !collisionStairs.stairRight) {
             entity.posx = solid.posx - entity.width + (entity.moveValues.x * entity.moveValues.amount * -1);
           }
           collision.right = true;
@@ -1085,10 +1126,9 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         }
       }
 
-      if (moveEntity) {
-        if (entity == objects.player) {
+      if (moveEntity && !collisionStairs.stairScroll) {
+        if (entity.mainType == 'player') {
           scrollOffsetAdjustment.x = scrollOffsetAdjustment.y = 0;
-
           if (collision.borderLeft) {
             scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1.1;
           }
