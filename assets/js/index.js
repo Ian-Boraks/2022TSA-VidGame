@@ -60,6 +60,8 @@ let lastPos = [];
 let respawning = false;
 let wallJumpAllowed = false;
 let playerMovementCheck = true;
+let wallJumpTimer = null;
+let stairScroll = false;
 
 let backgroundMusicPlaying = false;
 let score = 0;
@@ -373,16 +375,13 @@ function getMousePosition(canvas, start, event) {
           boxTemp["types"] = ["token"];
           break;
         case 'stair':
-          boxTemp["styles"] = ["draw", "#f2f5a1"];
-          boxTemp["types"] = ["solid", "stair"];
-          break;
+          drawStairs(startBox.x + objects.origin.posx, startBox.y + objects.origin.posy, endBox.x + objects.origin.posx, endBox.y + objects.origin.posy, "#f2f5a1");
+          return;
         default:
           console.log('Error: entity type not found');
           break;
       }
-
       boxHolder.push(boxTemp);
-
       objects.boxHolder.push(
         new entity(
           boxHolder.at(-1)["width"],
@@ -393,6 +392,8 @@ function getMousePosition(canvas, start, event) {
           boxHolder.at(-1)["types"]
         )
       );
+
+      updateClipboard(JSON.stringify(boxHolder));
     }
   }
 }
@@ -404,6 +405,14 @@ canvas.addEventListener("mousedown", function (e) {
 canvas.addEventListener("mouseup", function (e) {
   getMousePosition(canvas, false, e);
 });
+
+function updateClipboard(newClip) {
+  navigator.clipboard.writeText(newClip).then(function () {
+    /* clipboard successfully set */
+  }, function () {
+    /* clipboard write failed */
+  });
+}
 
 // * KEYBOARD CONTROLS ------------------------------------------------
 var keys = {
@@ -455,7 +464,8 @@ function onKeyDown(event) {
       keys.enterKey[0] = true;
       editorMode = !editorMode;
       if (!editorMode) {
-        console.log(boxHolder);
+        updateClipboard(JSON.stringify(boxHolder));
+        console.log(JSON.stringify(boxHolder));
       }
       alert(editorMode ? "Editor Mode is: on" : "Editor Mode is: off");
       break;
@@ -469,12 +479,25 @@ function onKeyDown(event) {
       break;
     case 90: //z
       keys.zKey[0] = true;
-      const length = boxHolder.length;
+      let length = boxHolder.length;
       if (editorMode && length > 0) {
-        const tempBox = objects.boxHolder[length - 1];
+        let tempBox = objects.boxHolder[length - 1];
         if (keys.ctrlKey[0]) {
-          objects.removeDict(tempBox);
-          boxHolder.pop();
+          if (tempBox.types.indexOf('stairLast') > -1) {
+            while (!(objects.boxHolder[objects.boxHolder.length - 1].types.indexOf('stairFirst') > -1)) {
+              tempBox = objects.boxHolder[objects.boxHolder.length - 1];
+              objects.removeDict(tempBox);
+              boxHolder.pop();
+            }
+            tempBox = objects.boxHolder[objects.boxHolder.length - 1];
+            objects.removeDict(tempBox);
+            boxHolder.pop();
+            updateClipboard(JSON.stringify(boxHolder));
+          } else {
+            objects.removeDict(tempBox);
+            boxHolder.pop();
+            updateClipboard(JSON.stringify(boxHolder));
+          }
         }
       }
       break;
@@ -591,6 +614,37 @@ var drawGrid = function (size) {
   }
   new entity((100).round(editorPrecision), (100).round(editorPrecision), (300).round(editorPrecision), (400).round(editorPrecision), ['grid', 'white'], ['grid']);
 };
+
+const drawStairs = function (x1, y1, x2, y2, color) {
+  console.log("drawStairs");
+  const slope = (y2 - y1) / (x2 - x1);
+  const w = Math.abs(x2 - x1);
+  const xDir = x2 - x1 > 0 ? 1 : -1;
+
+  let j = 0;
+  for (let i = 0; i < w; i++) {
+    let x = x1 + (i * xDir);
+    let y = y1 + (j * xDir);
+
+    boxHolder.push(
+      {
+        "width": 10,
+        "height": 10,
+        "initPosx": x,
+        "initPosy": y,
+        "styles": ["draw", color],
+        "types": ["solid", "stair"],
+      }
+    );
+
+    objects.boxHolder.push(
+      new entity(10, 10, x, y, ["draw", color], ["solid", "stair", i == 0 ? "stairFirst" : (i == w - 1 ? "stairLast" : null)])
+    );
+
+    j += slope;
+  }
+  updateClipboard(JSON.stringify(boxHolder));
+}
 
 function frameUpdate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -827,8 +881,9 @@ function playerMovementGravity(player) {
           playSound('jump');
           moveValues.y = config.jumpHeight;
           if (!wallJump) {
-            setTimeout(() => {
+            wallJumpTimer = setTimeout(() => {
               wallJumpAllowed = true;
+              wallJumpTimer = null;
             }, 400);
           }
         }
@@ -837,6 +892,7 @@ function playerMovementGravity(player) {
     }
   }
 
+  void detectCollision(player, "stairs");
   let collisionSolids = detectCollision(player);
   let collisionLadders = detectCollision(player, "ladders");
   void detectCollision(player, "tokens", false);
@@ -871,8 +927,16 @@ function playerMovementGravity(player) {
       scoreUpdate(100);
     }
   }
-  if (keys.aKey[1] && !wallJump && player.touchedGround) { keys.aKey[0] = true; wallJumpAllowed = false; }
-  if (keys.dKey[1] && !wallJump && player.touchedGround) { keys.dKey[0] = true; wallJumpAllowed = false; }
+  if (keys.aKey[1] && !wallJump && player.touchedGround) {
+    keys.aKey[0] = true;
+    wallJumpAllowed = false;
+    if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
+  }
+  if (keys.dKey[1] && !wallJump && player.touchedGround) {
+    keys.dKey[0] = true;
+    wallJumpAllowed = false;
+    if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
+  }
   player.height = player.crouched ? player.initHeight / 2 : player.initHeight;
 }
 
@@ -884,6 +948,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
     ladder: false,
     stairLeft: false,
     stairRight: false,
+    stairMove: false,
     stairScroll: false,
 
     top: false,
@@ -978,11 +1043,9 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       }
       break;
     case "stairs":
-      const borderArray = objects.borders
-      const borderLength = borderArray.length;
       checkArray = objects.stairs;
       length = checkArray.length;
-      if (length <= 0) { break; }
+      if (objects.stairs.length <= 0) { break; }
       for (let i = 0; i < length; i++) {
         let stair = checkArray[i];
         if (
@@ -990,59 +1053,44 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           entity.posx + (entity.moveValues.x * entity.moveValues.amount) < stair.posx + stair.width &&
           entity.posy + entity.height > stair.posy &&
           entity.posy < stair.posy + stair.height
-        ) { collision.left = true; }
+        ) { collision.left = true; collision.stairLeft = true; }
 
         if (
           entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > stair.posx &&
           entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 < stair.posx + stair.width &&
           entity.posy + entity.height > stair.posy &&
           entity.posy < stair.posy + stair.height
-        ) { collision.right = true; }
+        ) { collision.right = true; collision.stairRight = true; }
 
         if (
           entity.posx + entity.width + 20 > stair.posx &&
           entity.posx - 20 < stair.posx + stair.width &&
-          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= stair.posy &&
+          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height + 20 >= stair.posy &&
           entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) <= stair.posy + stair.height
-        ) { collision.top = true; }
+        ) {
+          // if (stair.mainType == 'borderWallTop') { collision.borderTop = true; }
+          collision.top = true;
+        }
+
+        if (collision.right || collision.left && !collision.top) { collision.stairMove = true; }
 
         if (moveEntity && collision.left && entity.touchedGround && !collision.top) {
-          collision.stairLeft = true;
           playerMovementCheck = false;
-          entity.posx = stair.posx + stair.width + (entity.moveValues.x * entity.moveValues.amount);
-          entity.posy = stair.posy + stair.height;
+          entity.moveValues.y = stair.height / entity.moveValues.amount;
+          wallJumpAllowed = false;
+          if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
+          break;
         }
         if (moveEntity && collision.right && entity.touchedGround && !collision.top) {
-          collision.stairRight = true;
           playerMovementCheck = false;
-          entity.posx = stair.posx - entity.width + (entity.moveValues.x * entity.moveValues.amount);
-          entity.posy = stair.posy + stair.height;
-        }
-        if (collision.stairRight || collision.stairLeft) {
-          for (let i = 0; i < borderLength; i++) {
-            const border = borderArray[i];
-            if (
-              entity.posx + entity.width - splitHitBoxOffset > border.posx &&
-              entity.posx + splitHitBoxOffset < border.posx + border.width &&
-              entity.posy + entity.height >= border.posy &&
-              entity.posy + (entity.height / 2) <= border.posy + border.height
-            ) {
-              // TODO: Make this actually good
-              scrollOffsetAdjustment.y = lastPos[1] - entity.posy;
-              // scrollOffsetAdjustment.x = lastPos[0] - entity.posx;
-              scrollOffsetTotal.x += scrollOffsetAdjustment.x;
-              // scrollOffsetTotal.y += scrollOffsetAdjustment.y;
-              objects.player.posx = lastPos[0];
-              objects.player.posy = lastPos[1];
-              collision.stairScroll = true;
-            }
-          }
+          entity.moveValues.y = stair.height / entity.moveValues.amount;
+          wallJumpAllowed = false;
+          if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
           break;
         }
       }
       break;
     case "solids":
-      const collisionStairs = detectCollision(entity, 'stairs', moveEntity);
       checkArray = objects.solids;
       length = checkArray.length;
       if (length <= 0) { break; }
@@ -1056,9 +1104,9 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         ) {
           if (solid.mainType == 'stopWall') { collision.stopWall = true; }
           if (solid.mainType == 'borderWallLeft') { collision.borderLeft = true; }
-          if (moveEntity && !collisionStairs.stairLeft) {
-            entity.posx = solid.posx + solid.width + (entity.moveValues.x * entity.moveValues.amount * -1);
-          }
+          // if (moveEntity && !collisionStairs.stairMove) {
+          entity.posx = solid.posx + solid.width + (entity.moveValues.x * entity.moveValues.amount * -1);
+          // }
           collision.left = true;
           // console.log('left');
         }
@@ -1071,9 +1119,9 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         ) {
           if (solid.mainType == 'stopWall') { collision.stopWall = true; }
           if (solid.mainType == 'borderWallRight') { collision.borderRight = true; }
-          if (moveEntity && !collisionStairs.stairRight) {
-            entity.posx = solid.posx - entity.width + (entity.moveValues.x * entity.moveValues.amount * -1);
-          }
+          // if (moveEntity && !collisionStairs.stairMove) {
+          entity.posx = solid.posx - entity.width + (entity.moveValues.x * entity.moveValues.amount * -1);
+          // }
           collision.right = true;
           // console.log('right');
         }
@@ -1126,7 +1174,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         }
       }
 
-      if (moveEntity && !collisionStairs.stairScroll) {
+      if (moveEntity) {
         if (entity.mainType == 'player') {
           scrollOffsetAdjustment.x = scrollOffsetAdjustment.y = 0;
           if (collision.borderLeft) {
