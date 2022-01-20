@@ -1043,6 +1043,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       }
       break;
     case "stairs":
+      // TODO: Remove Bouncing Stairs
       checkArray = objects.stairs;
       length = checkArray.length;
       if (objects.stairs.length <= 0) { break; }
@@ -1075,15 +1076,13 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         if (collision.right || collision.left && !collision.top) { collision.stairMove = true; }
 
         if (moveEntity && collision.left && entity.touchedGround && !collision.top) {
-          playerMovementCheck = false;
-          entity.moveValues.y = stair.height / entity.moveValues.amount;
+          entity.moveValues.y = .5;
           wallJumpAllowed = false;
           if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
           break;
         }
         if (moveEntity && collision.right && entity.touchedGround && !collision.top) {
-          playerMovementCheck = false;
-          entity.moveValues.y = stair.height / entity.moveValues.amount;
+          entity.moveValues.y = .5;
           wallJumpAllowed = false;
           if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
           break;
