@@ -795,7 +795,7 @@ function scoreUpdate(value = 0) {
 
     ctx.fillStyle = gradient;
 
-    ctx.fillText("Editor Mode -- snap (use [ / ]): ", 20, -100);
+    ctx.fillText("Editor Mode -- snap (use [ / ]): "+ editorPrecision, 20, -100);
     ctx.fillText(editorText2, 20, -160);
   }
 
