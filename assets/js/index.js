@@ -30,6 +30,7 @@ let playerDirection = "right";
 let objects = {
   player: null,
   origin: null,
+  bounds: null,
   img: [],
   solids: [],
   ladders: [], // FIXME: Ladders can phase you through the ground
@@ -62,6 +63,7 @@ let wallJumpAllowed = false;
 let playerMovementCheck = true;
 let wallJumpTimer = null;
 let stairScroll = false;
+let detectOutOfBoundsToggle = true;
 
 let backgroundMusicPlaying = false;
 let score = 0;
@@ -327,6 +329,7 @@ Object.prototype.removeDict = function (what) {
   if (this == objects) {
     keyList.removeArray("player");
     keyList.removeArray("origin");
+    keyList.removeArray("bounds");
   }
   for (let i = 0; i < keyList.length; i++) {
     this[keyList[i]].removeArray(what);
@@ -457,7 +460,7 @@ function onKeyDown(event) {
       keys.aKey[0] = true;
       keys.aKey[1] = true;
       break;
-    case 87: //w
+    case 87: //w 
       keys.wKey[0] = true;
       break;
     case 13: //enter
@@ -630,8 +633,8 @@ const drawStairs = function (x1, y1, x2, y2, color) {
       {
         "width": 10,
         "height": 10,
-        "initPosx": x,
-        "initPosy": y,
+        "initPosx": x - objects.origin.posx,
+        "initPosy": y - objects.origin.posy,
         "styles": ["draw", color],
         "types": ["solid", "stair"],
       }
@@ -704,6 +707,7 @@ function frameUpdate() {
 }
 
 function respawn() {
+  detectOutOfBoundsToggle = false;
   objects.removeDict(objects.player);
   objects.player = null;
   const newScrollOffset = {
@@ -726,6 +730,7 @@ function respawn() {
   if (!objects.player) {
     setTimeout(() => {
       objects.player = new entity(100, 200, 310, 310, ['img', 'player', 'idleR'], ['player']);
+      detectOutOfBoundsToggle = true;
     }, 1000);
   }
 }
@@ -897,6 +902,7 @@ function playerMovementGravity(player) {
   let collisionLadders = detectCollision(player, "ladders");
   void detectCollision(player, "tokens", false);
   void detectCollision(player, "traps", false);
+  void detectOutOfBounds(player);
 
   if (
     keys.spaceKey[0] &&
@@ -938,6 +944,31 @@ function playerMovementGravity(player) {
     if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
   }
   player.height = player.crouched ? player.initHeight / 2 : player.initHeight;
+}
+
+const detectOutOfBounds = function (entity) {
+  let bounds = objects.bounds;
+  if (!bounds || !detectOutOfBoundsToggle) { return "Detect Bounds Did Not Run"; }
+  if (
+    (
+      entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > bounds.posx &&
+      entity.posx + (entity.moveValues.x * entity.moveValues.amount) < bounds.posx + bounds.width &&
+      entity.posy + entity.height > bounds.posy &&
+      entity.posy < bounds.posy + bounds.height
+    ) || (
+      entity.posx + entity.width > bounds.currentPosx &&
+      entity.posx < bounds.currentPosx + bounds.width &&
+      entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= bounds.posy &&
+      entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= bounds.posy + bounds.height
+    )
+  ) {
+    return true;
+  } else {
+    console.log("out of bounds");
+    detectOutOfBoundsToggle = false;
+    respawn();
+    return false;
+  }
 }
 
 const detectCollision = function (entity, checkArrayName = "solids", moveEntity = true) {
@@ -1246,13 +1277,17 @@ function makeDefaultEntities(justBorders = false) {
       "types": ["borderWallRight", "border", "solid", "frozen"]
     }
   ];
-
+  
   // On the creation of default entities, the game will check if the origin and player are created. If not, it will create them.
   if (!objects.player) {
     objects.player = new entity(100, 200, 310, 310, ['img', 'player', 'idleR'], ['player']);
   }
   if (!objects.origin) {
     objects.origin = new entity(10, 10, 0, 0, ["draw", debugMode ? "#1370df" : "rgba(0, 0, 0, 0)"], undefined);
+  }
+  if (!objects.bounds) {
+    console.log('bounds made');
+    objects.bounds = new entity(canvas.width, canvas.height, 0, 0, ["draw", borderColor], ["bounds", "frozen"]);
   }
 
   loadMap(null, false, defaultEntities);
@@ -1264,6 +1299,7 @@ function loadMap(mapID = "init", clearMap = true, mapArray = null) {
     let keyList = Object.keys(objects);
     keyList.removeArray("player");
     keyList.removeArray("origin");
+    keyList.removeArray("bounds");
     for (let i = 0; i < keyList.length; i++) {
       objects[keyList[i]] = [];
     }
