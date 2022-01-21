@@ -44,24 +44,24 @@
 			"sHeight": 196
 		}
 	},
+  "solid_brick": {
+    "img": "/assets/img/repeating.solid_brick.png",
+    "idle": {
+      "frames": 1,
+      "sx": 0,
+      "sy": 0,
+      "sWidth": 4112,
+      "sHeight": 4112
+    }
+  },
   "trap": {
     "img": "/assets/img/trap.png",
     "idle": {
       "frames": 1,
       "sx": 0,
       "sy": 0,
-      "sWidth": 100,
-      "sHeight": 196
-    }
-  },
-  "solid_brick": {
-    "img": "/assets/img/solid_brick.png",
-    "idle": {
-      "frames": 1,
-      "sx": 0,
-      "sy": 0,
-      "sWidth": 1645,
-      "sHeight": 1645
+      "sWidth": 998,
+      "sHeight": 754
     }
   }
 }

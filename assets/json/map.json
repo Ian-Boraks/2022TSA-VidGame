@@ -4230,7 +4230,7 @@
 			"height": 120,
 			"initPosx": 1980,
 			"initPosy": 30,
-			"styles": ["draw", "#f56042"],
+			"styles": ["img", "trap", "idle"],
 			"types": ["trap"]
 		},
 		{
@@ -4302,7 +4302,7 @@
 			"height": 60,
 			"initPosx": 840,
 			"initPosy": 750,
-			"styles": ["draw", "#f56042"],
+			"styles": ["img", "trap", "idle"],
 			"types": ["trap"]
 		},
 		{
@@ -4438,7 +4438,7 @@
 			"height": 60,
 			"initPosx": 2490,
 			"initPosy": 60,
-			"styles": ["draw", "#f56042"],
+			"styles": ["img", "trap", "idle"],
 			"types": ["trap"]
 		},
 		{
@@ -4504,7 +4504,7 @@
 			"height": 175,
 			"initPosx": 4305,
 			"initPosy": 35,
-			"styles": ["draw", "#f56042"],
+			"styles": ["img", "trap", "idle"],
 			"types": ["trap"]
 		},
 		{
@@ -5054,11 +5054,11 @@
 			"types": ["token"]
 		},
 		{
-			"width": 50,
-			"height": 50,
+			"width": 500,
+			"height": 500,
 			"initPosx": 800,
 			"initPosy": 300,
-			"styles": ["draw", "#f56042"],
+			"styles": ["img", "trap", "idle"],
 			"types": ["trap"]
 		}
 	],

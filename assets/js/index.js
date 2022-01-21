@@ -198,11 +198,11 @@ soundManager.onready(function () {
 // * CLASSES ----------------------------------------------------------
 class entity {
   constructor(width, height, initPosx, initPosy, styles = ['draw', '#ff2f34'], types = ['solid']) {
-    this.width = width; 
+    this.width = width;
     this.height = height;
-    this.initWidth = width; 
+    this.initWidth = width;
     this.initHeight = height;
-    this.posx = initPosx; 
+    this.posx = initPosx;
     this.posy = initPosy;
     this.types = types;
     this.mainType = types[0];
@@ -262,7 +262,11 @@ class entity {
   draw() {
     switch (this.style) {
       case 'img':
-        ctx.drawImage(this.img, this.sx, this.sy, this.sWidth, this.sHeight, this.posx, this.posy, this.width, this.height);
+        if (this.mainType == 'player') {
+          ctx.drawImage(this.img, this.sx, this.sy, this.sWidth, this.sHeight, this.posx, this.posy, this.width, this.height);
+        } else {
+          ctx.drawImage(this.img, this.sx, this.sy, this.sWidth, this.sHeight, this.posx, this.posy, this.width, this.height);
+        }
         break;
       case 'draw':
         ctx.beginPath();
@@ -370,7 +374,7 @@ function getMousePosition(canvas, start, event) {
 
       switch (typeOfEntity) {
         case 'solid':
-          boxTemp["styles"] = ["draw", "#f370db"];
+          boxTemp["styles"] = ["img", "solid_brick", "idle"];
           boxTemp["types"] = ["solid"];
           break;
         case 'ladder':
@@ -378,7 +382,7 @@ function getMousePosition(canvas, start, event) {
           boxTemp["types"] = ["ladder"];
           break;
         case 'trap':
-          boxTemp["styles"] = ["draw", "#f56042"];
+          boxTemp["styles"] = ["img", "trap", "idle"];
           boxTemp["types"] = ["trap"];
           break;
         case 'token':
@@ -827,14 +831,29 @@ function scoreUpdate(value = 0) {
 function finalizeGroundEntities(entity) {
   const imgWidth = entity.sWidth;
   const imgHeight = entity.sHeight;
-  const posx = entity.posx;
-  const posy = entity.posy;
+  const posx = (entity.posx).round(1, true);
+  const posy = (imgHeight - entity.posy - entity.height).round(1, true);
   const posxImg = (imgWidth - posx) > 0 ? posx : posx - imgWidth;
   const posyImg = (imgHeight - posy) > 0 ? posy : posy - imgHeight;
+  // const imgWidth = entity.sWidth;
+  // const imgHeight = entity.sHeight;
+  // const posx = (entity.posx).round(1, true);
+  // const posy = (entity.posy).round(1, true);
+  // const posxImg = posx;
+  // const posyImg = imgHeight - posy - entity.height;
+  // console.log(posx, posy, "|", posxImg, posyImg);
 
-
-  entity.sx = posxImg;
-  entity.sy = posyImg;
+  switch (entity.mainType) {
+    case 'trap':
+      entity.sx = 0;
+      entity.sy = imgHeight - entity.height;
+      break;
+  
+    default:
+      entity.sx = posxImg;
+      entity.sy = posyImg;
+      break;
+  }
   entity.sWidth = entity.width;
   entity.sHeight = entity.height;
 }
@@ -1002,9 +1021,10 @@ const detectOutOfBounds = function (entity) {
     return true;
   } else {
     console.log("out of bounds");
-    // detectOutOfBoundsToggle = false;
     entity.posx = lastPos[0];
     entity.posy = lastPos[1];
+    entity.moveValues.x = entity.moveValues.x > 0 ? -.2 : .2;
+    entity.moveValues.y = entity.moveValues.y > 0 ? -.2 : .2;
     // respawn();
     return false;
   }
@@ -1330,7 +1350,14 @@ function makeDefaultEntities(justBorders = false) {
   }
   if (!objects.bounds) {
     console.log('bounds made');
-    objects.bounds = new entity(canvas.width, canvas.height, 0, 0, ["draw", borderColor], ["bounds", "frozen"]);
+    objects.bounds = new entity(
+      canvas.width - borderThickness - 700 - borderThickness + 60,
+      canvas.height - borderThickness - borderThickness,
+      borderThickness - 60,
+      borderThickness,
+      ["draw", borderColor],
+      ["bounds", "frozen"]
+    );
   }
 
   loadMap(null, false, defaultEntities);
