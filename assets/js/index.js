@@ -42,6 +42,7 @@ let objects = {
   traps: [],
   grids: [],
   boxHolder: [],
+  background: [],
 };
 
 const objectsInit = objects;
@@ -197,9 +198,12 @@ soundManager.onready(function () {
 // * CLASSES ----------------------------------------------------------
 class entity {
   constructor(width, height, initPosx, initPosy, styles = ['draw', '#ff2f34'], types = ['solid']) {
-    this.width = width; this.height = height;
-    this.initWidth = width; this.initHeight = height;
-    this.posx = initPosx; this.posy = initPosy;
+    this.width = width; 
+    this.height = height;
+    this.initWidth = width; 
+    this.initHeight = height;
+    this.posx = initPosx; 
+    this.posy = initPosy;
     this.types = types;
     this.mainType = types[0];
     this.moveValues = { x: 0, y: 0, amount: 0, speed: 7 };
@@ -216,6 +220,9 @@ class entity {
         this.sy = spriteSheets[styles[1]][this.animation]["sy"];
         this.sWidth = spriteSheets[styles[1]][this.animation]["sWidth"];
         this.sHeight = spriteSheets[styles[1]][this.animation]["sHeight"];
+        if (this.mainType != 'player') {
+          finalizeGroundEntities(this);
+        }
         break;
       case 'draw':
         this.style = 'draw';
@@ -247,6 +254,7 @@ class entity {
     if (types.indexOf('token') > -1) { objects.tokens.push(this); }
     if (types.indexOf('grid') > -1) { objects.grids.push(this); }
     if (types.indexOf('trap') > -1) { objects.traps.push(this); }
+    if (types.indexOf('background') > -1) { objects.background.push(this); }
 
     this.draw();
   }
@@ -380,6 +388,9 @@ function getMousePosition(canvas, start, event) {
         case 'stair':
           drawStairs(startBox.x + objects.origin.posx, startBox.y + objects.origin.posy, endBox.x + objects.origin.posx, endBox.y + objects.origin.posy, "#f2f5a1");
           return;
+        case 'background':
+          boxTemp["styles"] = ["draw", "#2dff"];
+          boxTemp["types"] = ["background"];
         default:
           console.log('Error: entity type not found');
           break;
@@ -434,6 +445,7 @@ var keys = {
   threeKey: [false],
   fourKey: [false],
   fiveKey: [false],
+  sixKey: [false],
 };
 
 function onKeyDown(event) {
@@ -538,7 +550,11 @@ function onKeyDown(event) {
     case 53: //5
       keys.fiveKey[0] = true;
       typeOfEntity = 'stair'
-      break
+      break;
+    case 54: //6
+      keys.sixKey[0] = true;
+      typeOfEntity = 'background'
+      break;
   }
 }
 
@@ -592,6 +608,9 @@ function onKeyUp(event) {
       break;
     case 53: //5
       keys.fiveKey[0] = false;
+      break;
+    case 54: //6
+      keys.sixKey[0] = false;
       break;
   }
 }
@@ -765,19 +784,22 @@ function scoreUpdate(value = 0) {
     let editorText2 = "Press # to change type -- "
     switch (typeOfEntity) {
       case 'ladder':
-        editorText2 += " ͇1͇:͇ ͇L͇A͇D͇D͇E͇R͇, 2: TRAP, 3: TOKEN, 4: SOLID, 5: STAIRS"
+        editorText2 += " ͇1͇:͇ ͇L͇A͇D͇D͇E͇R͇, 2: TRAP, 3: TOKEN, 4: SOLID, 5: STAIRS, 6: BACKGROUND"
         break;
       case 'trap':
-        editorText2 += "1: LADDER, ͇2͇:͇ ͇T͇R͇A͇P͇, 3: TOKEN, 4: SOLID, 5: STAIRS"
+        editorText2 += "1: LADDER, ͇2͇:͇ ͇T͇R͇A͇P͇, 3: TOKEN, 4: SOLID, 5: STAIRS, 6: BACKGROUND"
         break;
       case 'token':
-        editorText2 += "1: LADDER, 2: TRAP, ͇3͇:͇ ͇T͇O͇K͇E͇N͇, 4: SOLID, 5: STAIRS"
+        editorText2 += "1: LADDER, 2: TRAP, ͇3͇:͇ ͇T͇O͇K͇E͇N͇, 4: SOLID, 5: STAIRS, 6: BACKGROUND"
         break;
       case 'solid':
-        editorText2 += "1: LADDER, 2: TRAP, 3: TOKEN, ͇4͇:͇ ͇S͇O͇L͇I͇D͇, 5: STAIRS"
+        editorText2 += "1: LADDER, 2: TRAP, 3: TOKEN, ͇4͇:͇ ͇S͇O͇L͇I͇D͇, 5: STAIRS, 6: BACKGROUND"
         break;
       case 'stair':
-        editorText2 += "1: LADDER, 2: TRAP, 3: TOKEN, 4: SOLID, ͇5̳:̳ ̳S̳T̳A̳I̳R̳"
+        editorText2 += "1: LADDER, 2: TRAP, 3: TOKEN, 4: SOLID, ͇5̳:̳ ̳S̳T̳A̳I̳R̳, 6: BACKGROUND"
+        break;
+      case 'background':
+        editorText2 += "1: LADDER, 2: TRAP, 3: TOKEN, 4: SOLID, 5: STAIRS, ͇6͇:͇ ͇B͇A͇C͇K͇G͇R͇O̳U̳N̳D͇"
         break;
       default:
         console.log('Error: entity type not found');
@@ -800,6 +822,21 @@ function scoreUpdate(value = 0) {
   }
 
   ctx.restore();
+}
+
+function finalizeGroundEntities(entity) {
+  const imgWidth = entity.sWidth;
+  const imgHeight = entity.sHeight;
+  const posx = entity.posx;
+  const posy = entity.posy;
+  const posxImg = (imgWidth - posx) > 0 ? posx : posx - imgWidth;
+  const posyImg = (imgHeight - posy) > 0 ? posy : posy - imgHeight;
+
+
+  entity.sx = posxImg;
+  entity.sy = posyImg;
+  entity.sWidth = entity.width;
+  entity.sHeight = entity.height;
 }
 
 function animate(entity) {
