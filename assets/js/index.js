@@ -198,6 +198,7 @@ soundManager.onready(function () {
 // * CLASSES ----------------------------------------------------------
 class entity {
   constructor(width, height, initPosx, initPosy, styles = ['draw', '#ff2f34'], types = ['solid']) {
+    ctx.fillRect(0, 0, canvas.width, canvas.height, 'black');
     this.width = width;
     this.height = height;
     this.initWidth = width;
@@ -242,7 +243,6 @@ class entity {
       this.touchedGround = false;
       this.lastPos = [undefined, undefined];
       this.lastMove = [undefined, undefined];
-      this.draw();
       return;
     }
 
@@ -255,8 +255,6 @@ class entity {
     if (types.indexOf('grid') > -1) { objects.grids.push(this); }
     if (types.indexOf('trap') > -1) { objects.traps.push(this); }
     if (types.indexOf('background') > -1) { objects.background.push(this); }
-
-    this.draw();
   }
 
   draw() {
@@ -1381,6 +1379,7 @@ function makeDefaultEntities(justBorders = false) {
 }
 
 function loadMap(mapID = "init", clearMap = true, mapArray = null) {
+  ctx.fillRect(0, 0, canvas.width, canvas.height, 'black');
   if (clearMap) {
     scrollOffsetTotal = { x: 0, y: 0 };
     let keyList = Object.keys(objects);
@@ -1401,6 +1400,7 @@ function loadMap(mapID = "init", clearMap = true, mapArray = null) {
   let loadMapPrecision = 1;
 
   for (let i = 0; i < length; i++) {
+    ctx.fillRect(0, 0, canvas.width, canvas.height, 'black');
     if (!mapObjects[i] || mapObjects[i]["width"] == 0 || mapObjects[i]["height"] == 0) { continue; }
     new entity(
       (mapObjects[i]["width"] > loadMapPrecision ? mapObjects[i]["width"] : loadMapPrecision).round(loadMapPrecision),
