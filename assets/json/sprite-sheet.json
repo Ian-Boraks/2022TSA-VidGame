@@ -57,7 +57,7 @@
   "trap": {
     "img": "/assets/img/trap.png",
     "idle": {
-      "frames": 1,
+      "frames": 499,
       "sx": 0,
       "sy": 0,
       "sWidth": 998,

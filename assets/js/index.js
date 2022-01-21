@@ -845,13 +845,16 @@ function finalizeGroundEntities(entity) {
 
   switch (entity.mainType) {
     case 'trap':
-      entity.sx = 0;
+      entity.sx = Math.random() * imgWidth;
       entity.sy = imgHeight - entity.height;
       break;
-  
-    default:
+
+    case 'solid':
       entity.sx = posxImg;
       entity.sy = posyImg;
+
+    default:
+
       break;
   }
   entity.sWidth = entity.width;
@@ -861,9 +864,23 @@ function finalizeGroundEntities(entity) {
 function animate(entity) {
   let frames = spriteSheets[entity.imgLink][entity.animation]["frames"];
 
-  entity.sx += entity.sWidth;
+  switch (entity.mainType) {
+    case 'trap':
+      entity.sx += 6;
+      if (entity.sx > frames) {
+        console.log('trap animation ended');
+        entity.sx = 0;
+      }
+      break;
 
-  if (entity.sx / entity.sWidth >= frames) { entity.sx = spriteSheets[entity.imgLink][entity.animation]["sx"]; }
+    case 'solid':
+      return;
+
+    default:
+      entity.sx += entity.sWidth;
+      if (entity.sx / entity.sWidth >= frames) { entity.sx = spriteSheets[entity.imgLink][entity.animation]["sx"]; }
+      break;
+  }
 }
 
 function switchAnimation(entity, animationID, animationSpeed = config.defaultAnimationRunDelay) {
