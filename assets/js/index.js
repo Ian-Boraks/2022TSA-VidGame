@@ -795,7 +795,7 @@ function scoreUpdate(value = 0) {
 
     ctx.fillStyle = gradient;
 
-    ctx.fillText("Editor Mode -- snap (use [ / ]): "+ editorPrecision, 20, -100);
+    ctx.fillText("Editor Mode -- snap (use [ / ]): " + editorPrecision, 20, -100);
     ctx.fillText(editorText2, 20, -160);
   }
 
@@ -965,8 +965,10 @@ const detectOutOfBounds = function (entity) {
     return true;
   } else {
     console.log("out of bounds");
-    detectOutOfBoundsToggle = false;
-    respawn();
+    // detectOutOfBoundsToggle = false;
+    entity.posx = lastPos[0];
+    entity.posy = lastPos[1];
+    // respawn();
     return false;
   }
 }
@@ -999,6 +1001,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       if (length <= 0) { break; }
       for (let i = 0; i < checkArray.length; i++) {
         const ladder = checkArray[i];
+        if (!ladder) { continue; }
         if (
           (
             entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > ladder.posx &&
@@ -1025,6 +1028,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       if (length <= 0) { break; }
       for (let i = 0; i < length; i++) {
         const trap = checkArray[i];
+        if (!trap) { continue; }
         if (
           (
             entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > trap.posx &&
@@ -1038,9 +1042,8 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
             entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= trap.posy + trap.height
           )
         ) {
-          scoreUpdate(-5000);
+          scoreUpdate(-1000);
           if (!editorMode) {
-            objects.removeDict(trap);
             respawn();
           }
           playSound('death');
@@ -1052,6 +1055,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       if (length <= 0) { break; }
       for (let i = 0; i < length; i++) {
         const token = checkArray[i];
+        if (!token) { continue; }
         if (
           (
             entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > token.posx &&
@@ -1065,7 +1069,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
             entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= token.posy + token.height
           )
         ) {
-          scoreUpdate(10000);
+          scoreUpdate(1000);
           if (!editorMode) {
             objects.removeDict(token);
           }
@@ -1080,6 +1084,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       if (objects.stairs.length <= 0) { break; }
       for (let i = 0; i < length; i++) {
         let stair = checkArray[i];
+        if (!stair) { continue; }
         if (
           entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > stair.posx &&
           entity.posx + (entity.moveValues.x * entity.moveValues.amount) < stair.posx + stair.width &&
@@ -1126,6 +1131,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       if (length <= 0) { break; }
       for (let i = 0; i < length; i++) {
         const solid = checkArray[i];
+        if (!solid) { continue; }
         if (
           entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > solid.posx &&
           entity.posx + (entity.moveValues.x * entity.moveValues.amount) < solid.posx + solid.width &&
@@ -1277,7 +1283,7 @@ function makeDefaultEntities(justBorders = false) {
       "types": ["borderWallRight", "border", "solid", "frozen"]
     }
   ];
-  
+
   // On the creation of default entities, the game will check if the origin and player are created. If not, it will create them.
   if (!objects.player) {
     objects.player = new entity(100, 200, 310, 310, ['img', 'player', 'idleR'], ['player']);
