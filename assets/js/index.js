@@ -1044,7 +1044,7 @@ const detectOutOfBounds = function (entity) {
     entity.moveValues.x = -lastMove[0];
     entity.moveValues.y = -lastMove[1];
     // respawn();
-    detectOutOfBoundsToggle = false;
+    // detectOutOfBoundsToggle = false;
     return false;
   }
 }
