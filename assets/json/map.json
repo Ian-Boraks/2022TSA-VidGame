@@ -5047,15 +5047,15 @@
 		},
 		{
 			"width": 50,
-			"height": 50,
+			"height": 100,
 			"initPosx": 600,
 			"initPosy": 300,
 			"styles": ["draw", "#42f5a1"],
 			"types": ["token"]
 		},
 		{
-			"width": 500,
-			"height": 500,
+			"width": 50,
+			"height": 100,
 			"initPosx": 800,
 			"initPosy": 300,
 			"styles": ["img", "trap", "idle"],
