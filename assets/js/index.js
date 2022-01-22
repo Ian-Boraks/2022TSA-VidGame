@@ -1,3 +1,5 @@
+// "use strict";
+
 const config = {
   gravityEnabled: true,
   gravity: .1,
@@ -9,7 +11,8 @@ const config = {
   borderThickness: 300,
   defaultAnimationRunDelay: 1,
   defWidth: 2880,
-  defHeight: 1620
+  defHeight: 1620,
+  frameRate: 60,
 }
 
 let debugMode = false;
@@ -68,6 +71,13 @@ let detectOutOfBoundsToggle = true;
 
 let backgroundMusicPlaying = false;
 let score = 0;
+
+let secondsPassed = 0;
+let oldTimeStamp = 0;
+let totalTimePassed = {
+  trap: 0,
+  total: 0,
+};
 
 
 // * ON LOAD --------------------------------------------------------
@@ -206,6 +216,7 @@ class entity {
     this.posx = initPosx;
     this.posy = initPosy;
     this.types = types;
+    this.totalTimePassed = 0;
     this.mainType = types[0];
     this.moveValues = { x: 0, y: 0, amount: 0, speed: 7 };
 
@@ -224,10 +235,12 @@ class entity {
         if (this.mainType != 'player') {
           finalizeGroundEntities(this);
         }
+        this.draw = () => { this.drawImg(this); };
         break;
       case 'draw':
         this.style = 'draw';
         this.color = styles[1];
+        this.draw = () => { this.drawRect(this); };
         break;
       case 'grid':
         this.style = 'grid';
@@ -243,65 +256,56 @@ class entity {
       this.touchedGround = false;
       this.lastPos = [undefined, undefined];
       this.lastMove = [undefined, undefined];
+      this.move = () => { this.movePlayer(this); };
       return;
-    }
-
-    if (types.indexOf('solid') > -1) { objects.solids.push(this); }
-    if (types.indexOf('ladder') > -1) { objects.ladders.push(this); }
-    if (types.indexOf('frozen') > -1) { objects.frozen.push(this); } else { objects.nonFrozen.push(this); }
-    if (types.indexOf('stair') > -1) { objects.stairs.push(this); }
-    if (types.indexOf('border') > -1) { objects.borders.push(this); }
-    if (types.indexOf('token') > -1) { objects.tokens.push(this); }
-    if (types.indexOf('grid') > -1) { objects.grids.push(this); }
-    if (types.indexOf('trap') > -1) { objects.traps.push(this); }
-    if (types.indexOf('background') > -1) { objects.background.push(this); }
-  }
-
-  draw() {
-    switch (this.style) {
-      case 'img':
-        if (this.mainType == 'player') {
-          ctx.drawImage(this.img, this.sx, this.sy, this.sWidth, this.sHeight, this.posx, this.posy, this.width, this.height);
-        } else {
-          ctx.drawImage(this.img, this.sx, this.sy, this.sWidth, this.sHeight, this.posx, this.posy, this.width, this.height);
-        }
-        break;
-      case 'draw':
-        ctx.beginPath();
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.posx, this.posy, this.width, this.height);
-        ctx.closePath();
-        break;
-      case 'grid':
-        ctx.beginPath();
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = 3;
-        ctx.rect(this.posx, this.posy, this.width, this.height);
-        ctx.stroke();
-        ctx.closePath();
-      default:
-        // console.log('Error: entity style not found (draw)');
-        break;
+    } else {
+      if (types.indexOf('solid') > -1) { objects.solids.push(this); }
+      if (types.indexOf('ladder') > -1) { objects.ladders.push(this); }
+      if (types.indexOf('frozen') > -1) { objects.frozen.push(this); } else { objects.nonFrozen.push(this); }
+      if (types.indexOf('stair') > -1) { objects.stairs.push(this); }
+      if (types.indexOf('border') > -1) { objects.borders.push(this); }
+      if (types.indexOf('token') > -1) { objects.tokens.push(this); }
+      if (types.indexOf('grid') > -1) { objects.grids.push(this); }
+      if (types.indexOf('trap') > -1) { this.animationSpeed = getRandom(7, 20); objects.traps.push(this); }
+      if (types.indexOf('background') > -1) { objects.background.push(this); }
+      this.move = () => { this.moveDefault(this); };
     }
   }
 
-  move() {
-    switch (this == objects.player) {
-      case true:
-        if (this.moveValues.amount == 0) { return; }
-        this.lastPos = [this.posx, this.posy];
-        this.lastMove = [this.moveValues.x, this.moveValues.y];
-        this.posx += this.moveValues.x * this.moveValues.amount;
-        this.posy += this.moveValues.y * this.moveValues.amount;
-        break;
-      case false:
-        this.posx += scrollOffsetAdjustment.x;
-        this.posy += scrollOffsetAdjustment.y;
-        break;
-      default:
-        console.log('Error: entity type not found');
-        break;
-    }
+  drawImg = () => {
+    ctx.drawImage(this.img, this.sx, this.sy, this.sWidth, this.sHeight, this.posx, this.posy, this.width, this.height);
+  }
+
+  drawRect = () => {
+    ctx.beginPath();
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.posx, this.posy, this.width, this.height);
+    ctx.closePath();
+  }
+
+  drawGrid = () => {
+    ctx.beginPath();
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 3;
+    ctx.rect(this.posx, this.posy, this.width, this.height);
+    ctx.stroke();
+    ctx.closePath();
+  }
+
+  movePlayer = () => {
+    if (config.gravityEnabled) { playerMovementGravity(this, secondsPassed); } else { playerMovementNoGravity(this, secondsPassed); }
+
+    if (this.moveValues.amount == 0) { return; }
+
+    this.posx += this.moveValues.x * this.moveValues.amount;
+    this.posy += this.moveValues.y * this.moveValues.amount;
+  }
+
+  moveDefault = () => {
+    if (scrollOffsetAdjustment.x == 0 && scrollOffsetAdjustment.y == 0) { return; }
+
+    this.posx += scrollOffsetAdjustment.x;
+    this.posy += scrollOffsetAdjustment.y;
   }
 }
 
@@ -320,7 +324,7 @@ Object.prototype.getKeysByValue = function (selection) {
   // console.log(
   //   Object.keys(Object.fromEntries(Object.entries(this).filter((element) => element[1][0] == selection)))
   // );
-  return filteredKeysTemp = Object.keys(Object.fromEntries(Object.entries(this).filter((element) => element[1][0] == selection)));
+  return Object.keys(Object.fromEntries(Object.entries(this).filter((element) => element[1][0] == selection)));
 }
 
 Array.prototype.filterArray = function (value) {
@@ -428,6 +432,34 @@ function updateClipboard(newClip) {
   }, function () {
     /* clipboard write failed */
   });
+}
+
+const returnMoveValues = (entity) => {
+  return {
+    x: entity.moveValues.x,
+    y: entity.moveValues.y,
+    amount: entity.moveValues.amount,
+
+    totMovX: entity.moveValues.x * entity.moveValues.amount,
+    totMovY: entity.moveValues.y * entity.moveValues.amount,
+
+    newx: entity.posx + (entity.moveValues.x * entity.moveValues.amount),
+    newy: entity.posy + (entity.moveValues.y * entity.moveValues.amount)
+  }
+}
+
+const lerp = (start, end, speed) => {
+  return start + (end - start) * speed;
+}
+
+const oscillator = (time, frequency = 1, amplitude = 1, phase = 0, offset = 0) => {
+  return Math.sin(time * frequency * Math.PI * 2 + phase * Math.PI * 2) * amplitude + offset;
+}
+
+const getRandom = (min, max) => {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.random() * (max - min) + min; //The maximum is exclusive and the minimum is inclusive
 }
 
 // * KEYBOARD CONTROLS ------------------------------------------------
@@ -670,61 +702,55 @@ const drawStairs = function (x1, y1, x2, y2, color) {
   updateClipboard(JSON.stringify(boxHolder));
 }
 
-function frameUpdate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  switch (objects.player != null) {
-    case true:
-      lastPos = [objects.player.posx, objects.player.posy];
-      if (config.gravityEnabled) { playerMovementGravity(objects.player); } else { playerMovementNoGravity(objects.player); }
-      if (animationRunDelayCounter <= animationRunDelay) { animationRunDelayCounter++; } else { animationRunDelayCounter = 0; }
-      if (animationRunDelayCounter == animationRunDelay) {
-        for (let i = 0; i < objects.img.length; i++) {
-          animate(objects.img[i]);
-        }
-      }
-      for (let i = 0; i < objects.nonFrozen.length; i++) {
-        objects.nonFrozen[i].move();
-        objects.nonFrozen[i].draw();
-      }
-      for (let i = 0; i < objects.frozen.length; i++) {
-        objects.frozen[i].draw();
-      }
-      scoreUpdate(-1);
-      if (!objects.player) { break; }
-      objects.player.move();
-      if (
-        playerMovementCheck &&
-        (Math.abs(lastPos[0] - objects.player.posx) > config.playerMaxSpeedError || Math.abs(lastPos[1] - objects.player.posy) > config.playerMaxSpeedError)
-      ) {
-        console.log("Player moved too fast");
-        objects.player.posx = lastPos[0];
-        objects.player.posy = lastPos[1];
-        let collision = detectCollision(objects.player, "solids", false);
-        if (collision.bottom) {
-          objects.player.posy = lastPos[1] + 4;
-        }
-        if (collision.top) {
-          objects.player.posy = lastPos[1] - 4;
-        }
-      }
-      playerMovementCheck = true;
-      objects.player.draw();
-      break;
-    default:
-      // If player is dead or not present, only render the terrain and statics
-      for (let i = 0; i < objects.img.length; i++) {
-        animate(objects.img[i]);
-      }
-      for (let i = 0; i < objects.nonFrozen.length; i++) {
-        objects.nonFrozen[i].draw();
-      }
-      for (let i = 0; i < objects.frozen.length; i++) {
-        objects.frozen[i].draw();
-      }
-      scoreUpdate();
-      break;
+function animateRunner(secondsPassed) {
+  if (animationRunDelayCounter <= animationRunDelay) { animationRunDelayCounter++; } else { animationRunDelayCounter = 0; }
+  if (animationRunDelayCounter == animationRunDelay) {
+    for (let i = 0; i < objects.img.length; i++) {
+      animate(objects.img[i], secondsPassed);
+    }
   }
+  return;
+}
+
+function frameUpdate() {
+  for (let i = 0; i < objects.nonFrozen.length; i++) {
+    objects.nonFrozen[i].move();
+    objects.nonFrozen[i].draw();
+  }
+  for (let i = 0; i < objects.frozen.length; i++) {
+    objects.frozen[i].draw();
+  }
+  scoreUpdate(-1);
+  return;
+}
+
+function playerUpdate(secondsPassed) {
+  if (!objects.player) { return; }
+  try {
+    lastPos = [objects.player.posx, objects.player.posy];
+
+    objects.player.move();
+    if (
+      playerMovementCheck &&
+      (Math.abs(lastPos[0] - objects.player.posx) > config.playerMaxSpeedError || Math.abs(lastPos[1] - objects.player.posy) > config.playerMaxSpeedError)
+    ) {
+      console.log("Player moved too fast");
+      objects.player.posx = lastPos[0];
+      objects.player.posy = lastPos[1];
+      let collision = detectCollision(objects.player, "solids", false);
+      if (collision.bottom) {
+        objects.player.posy = lastPos[1] + 4;
+      }
+      if (collision.top) {
+        objects.player.posy = lastPos[1] - 4;
+      }
+    }
+    playerMovementCheck = true;
+    objects.player.draw();
+  } catch (TypeError) {
+    // throw TypeError
+  }
+  return;
 }
 
 function respawn() {
@@ -859,15 +885,17 @@ function finalizeGroundEntities(entity) {
   entity.sHeight = entity.height;
 }
 
-function animate(entity) {
+function animate(entity, secondsPassed) {
   let frames = spriteSheets[entity.imgLink][entity.animation]["frames"];
+  let height = spriteSheets[entity.imgLink][entity.animation]["sHeight"];
 
   switch (entity.mainType) {
     case 'trap':
-      entity.sx += 6;
-      if (entity.sx > frames) {
-        console.log('trap animation ended');
-        entity.sx = 0;
+      entity.sx = lerp(0, frames, entity.totalTimePassed / entity.animationSpeed);
+      entity.sy = height - entity.height - (oscillator(totalTimePassed.total, .5, .5) * 5);
+      if (totalTimePassed.trap / entity.animationSpeed >= 1) {
+        entity.sx = lerp(0, frames, 0);;
+        entity.totalTimePassed = 0;
       }
       break;
 
@@ -891,7 +919,7 @@ function switchAnimation(entity, animationID, animationSpeed = config.defaultAni
   entity.sHeight = spriteSheets[entity.imgLink][entity.animation]["sHeight"];
 }
 
-function playerMovementGravity(player) {
+function playerMovementGravity(player, secondsPassed) {
   // return;
   let moveValues = player.moveValues;
   moveValues.amount = moveValues.speed;
@@ -1020,17 +1048,20 @@ function playerMovementGravity(player) {
 const detectOutOfBounds = function (entity) {
   let bounds = objects.bounds;
   if (!bounds || !detectOutOfBoundsToggle) { return "Detect Bounds Did Not Run"; }
+
+  const moveValues = returnMoveValues(entity);
+
   if (
     (
-      entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > bounds.posx &&
-      entity.posx + (entity.moveValues.x * entity.moveValues.amount) < bounds.posx + bounds.width &&
+      moveValues.newx + entity.width > bounds.posx &&
+      moveValues.newx < bounds.posx + bounds.width &&
       entity.posy + entity.height > bounds.posy &&
       entity.posy < bounds.posy + bounds.height
     ) || (
-      entity.posx + entity.width > bounds.currentPosx &&
-      entity.posx < bounds.currentPosx + bounds.width &&
-      entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= bounds.posy &&
-      entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= bounds.posy + bounds.height
+      entity.posx + entity.width > bounds.posx &&
+      entity.posx < bounds.posx + bounds.width &&
+      moveValues.newy + entity.height >= bounds.posy &&
+      moveValues.newy <= bounds.posy + bounds.height
     )
   ) {
     return true;
@@ -1038,8 +1069,8 @@ const detectOutOfBounds = function (entity) {
     console.log("out of bounds");
     entity.posx = lastPos[0];
     entity.posy = lastPos[1];
-    entity.moveValues.x = entity.moveValues.x > 0 ? -.2 : .2;
-    entity.moveValues.y = entity.moveValues.y > 0 ? -.2 : .2;
+    entity.moveValues.x = moveValues.x > 0 ? -.2 : .2;
+    entity.moveValues.y = moveValues.y > 0 ? -.2 : .2;
     // respawn();
     return false;
   }
@@ -1066,6 +1097,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
     borderRight: false,
     borderLeft: false,
   };
+
   switch (checkArrayName) {
     case "ladders":
       checkArray = objects.ladders;
@@ -1074,17 +1106,18 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       for (let i = 0; i < checkArray.length; i++) {
         const ladder = checkArray[i];
         if (!ladder) { continue; }
+        const moveValues = returnMoveValues(entity);
         if (
           (
-            entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > ladder.posx &&
-            entity.posx + (entity.moveValues.x * entity.moveValues.amount) < ladder.posx + ladder.width &&
+            moveValues.newx + entity.width > ladder.posx &&
+            moveValues.newx < ladder.posx + ladder.width &&
             entity.posy + entity.height > ladder.posy &&
             entity.posy < ladder.posy + ladder.height
           ) || (
             entity.posx + entity.width > ladder.currentPosx &&
             entity.posx < ladder.currentPosx + ladder.width &&
-            entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= ladder.posy &&
-            entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= ladder.posy + ladder.height
+            moveValues.newy + entity.height >= ladder.posy &&
+            moveValues.newy <= ladder.posy + ladder.height
           )
         ) {
           collision.ladder = true;
@@ -1101,17 +1134,18 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       for (let i = 0; i < length; i++) {
         const trap = checkArray[i];
         if (!trap) { continue; }
+        const moveValues = returnMoveValues(entity);
         if (
           (
-            entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > trap.posx &&
-            entity.posx + (entity.moveValues.x * entity.moveValues.amount) < trap.posx + trap.width &&
+            moveValues.newx + entity.width > trap.posx &&
+            moveValues.newx < trap.posx + trap.width &&
             entity.posy + entity.height > trap.posy &&
             entity.posy < trap.posy + trap.height
           ) || (
             entity.posx + entity.width > trap.posx &&
             entity.posx < trap.currentPosx + trap.width &&
-            entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= trap.posy &&
-            entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= trap.posy + trap.height
+            moveValues.newy + entity.height >= trap.posy &&
+            moveValues.newy <= trap.posy + trap.height
           )
         ) {
           scoreUpdate(-1000);
@@ -1121,6 +1155,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           playSound('death');
         }
       }
+      break;
     case "tokens":
       checkArray = objects.tokens;
       length = checkArray.length;
@@ -1128,17 +1163,18 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       for (let i = 0; i < length; i++) {
         const token = checkArray[i];
         if (!token) { continue; }
+        const moveValues = returnMoveValues(entity);
         if (
           (
-            entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > token.posx &&
-            entity.posx + (entity.moveValues.x * entity.moveValues.amount) < token.posx + token.width &&
+            moveValues.newx + entity.width > token.posx &&
+            moveValues.newx < token.posx + token.width &&
             entity.posy + entity.height > token.posy &&
             entity.posy < token.posy + token.height
           ) || (
             entity.posx + entity.width > token.posx &&
             entity.posx < token.currentPosx + token.width &&
-            entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= token.posy &&
-            entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= token.posy + token.height
+            moveValues.newy + entity.height >= token.posy &&
+            moveValues.newy <= token.posy + token.height
           )
         ) {
           scoreUpdate(1000);
@@ -1157,16 +1193,17 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       for (let i = 0; i < length; i++) {
         let stair = checkArray[i];
         if (!stair) { continue; }
+        const moveValues = returnMoveValues(entity);
         if (
-          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > stair.posx &&
-          entity.posx + (entity.moveValues.x * entity.moveValues.amount) < stair.posx + stair.width &&
+          moveValues.newx + entity.width / 2 > stair.posx &&
+          moveValues.newx < stair.posx + stair.width &&
           entity.posy + entity.height > stair.posy &&
           entity.posy < stair.posy + stair.height
         ) { collision.left = true; collision.stairLeft = true; }
 
         if (
-          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > stair.posx &&
-          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 < stair.posx + stair.width &&
+          moveValues.newx + entity.width > stair.posx &&
+          moveValues.newx + entity.width / 2 < stair.posx + stair.width &&
           entity.posy + entity.height > stair.posy &&
           entity.posy < stair.posy + stair.height
         ) { collision.right = true; collision.stairRight = true; }
@@ -1174,8 +1211,8 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         if (
           entity.posx + entity.width + 20 > stair.posx &&
           entity.posx - 20 < stair.posx + stair.width &&
-          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height + 20 >= stair.posy &&
-          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) <= stair.posy + stair.height
+          moveValues.newy + entity.height + 20 >= stair.posy &&
+          moveValues.newy + (entity.height / 2) <= stair.posy + stair.height
         ) {
           // if (stair.mainType == 'borderWallTop') { collision.borderTop = true; }
           collision.top = true;
@@ -1204,41 +1241,43 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
       for (let i = 0; i < length; i++) {
         const solid = checkArray[i];
         if (!solid) { continue; }
+        let moveValues = returnMoveValues(entity);
         if (
-          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 > solid.posx &&
-          entity.posx + (entity.moveValues.x * entity.moveValues.amount) < solid.posx + solid.width &&
+          moveValues.newx + entity.width / 2 > solid.posx &&
+          moveValues.newx < solid.posx + solid.width &&
           entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
           entity.posy + splitHitBoxOffset < solid.posy + solid.height
         ) {
           if (solid.mainType == 'stopWall') { collision.stopWall = true; }
           if (solid.mainType == 'borderWallLeft') { collision.borderLeft = true; }
           // if (moveEntity && !collisionStairs.stairMove) {
-          entity.posx = solid.posx + solid.width + (entity.moveValues.x * entity.moveValues.amount * -1);
+          entity.posx = solid.posx + solid.width + (moveValues.totMovX * -1);
           // }
           collision.left = true;
           // console.log('left');
         }
 
         if (
-          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width > solid.posx &&
-          entity.posx + (entity.moveValues.x * entity.moveValues.amount) + entity.width / 2 < solid.posx + solid.width &&
+          moveValues.newx + entity.width > solid.posx &&
+          moveValues.newx + entity.width / 2 < solid.posx + solid.width &&
           entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
           entity.posy + splitHitBoxOffset < solid.posy + solid.height
         ) {
           if (solid.mainType == 'stopWall') { collision.stopWall = true; }
           if (solid.mainType == 'borderWallRight') { collision.borderRight = true; }
           // if (moveEntity && !collisionStairs.stairMove) {
-          entity.posx = solid.posx - entity.width + (entity.moveValues.x * entity.moveValues.amount * -1);
+          entity.posx = solid.posx - entity.width + (moveValues.totMovX * -1);
           // }
           collision.right = true;
           // console.log('right');
         }
 
+        // moveValues = returnMoveValues(entity);
         if (
           entity.posx + entity.width - splitHitBoxOffset > solid.posx &&
           entity.posx + splitHitBoxOffset < solid.posx + solid.width &&
-          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) >= solid.posy &&
-          entity.posy + (entity.moveValues.y * entity.moveValues.amount) <= solid.posy + solid.height
+          moveValues.newy + (entity.height / 2) >= solid.posy &&
+          moveValues.newy <= solid.posy + solid.height
         ) {
           if (solid.mainType == 'stopWall') { collision.stopWall = true; }
           if (solid.mainType == 'borderWallBottom') { collision.borderBottom = true; }
@@ -1248,7 +1287,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
             }
           }
           if (moveEntity) {
-            entity.posy = solid.posy + solid.height + (entity.moveValues.y * entity.moveValues.amount * (collision.borderBottom ? -1.1 : -1));
+            entity.posy = solid.posy + solid.height + (moveValues.totMovY * (collision.borderBottom ? -1.1 : -1));
           }
           collision.bottom = true;
         }
@@ -1256,13 +1295,13 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         if (
           entity.posx + entity.width - splitHitBoxOffset > solid.posx &&
           entity.posx + splitHitBoxOffset < solid.posx + solid.width &&
-          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.height >= solid.posy &&
-          entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.height / 2) <= solid.posy + solid.height
+          moveValues.newy + entity.height >= solid.posy &&
+          moveValues.newy + (entity.height / 2) <= solid.posy + solid.height
         ) {
           if (solid.mainType == 'stopWall') { collision.stopWall = true; }
           if (solid.mainType == 'borderWallTop') { collision.borderTop = true; }
           if (moveEntity) {
-            entity.posy = solid.posy - entity.height + (entity.moveValues.y * entity.moveValues.amount * (collision.borderTop ? -1.1 : -1));
+            entity.posy = solid.posy - entity.height + (moveValues.totMovY * (collision.borderTop ? -1.1 : -1));
           }
           collision.top = true;
           // console.log('top');
@@ -1272,34 +1311,26 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           if (
             entity.posx + entity.width - splitHitBoxOffset > solid.posx &&
             entity.posx + splitHitBoxOffset < solid.posx + solid.width &&
-            entity.posy + (entity.moveValues.y * entity.moveValues.amount) + entity.initHeight >= solid.posy &&
-            entity.posy + (entity.moveValues.y * entity.moveValues.amount) + (entity.initHeight / 2) <= solid.posy + solid.height
+            moveValues.newy + entity.initHeight >= solid.posy &&
+            moveValues.newy + (entity.initHeight / 2) <= solid.posy + solid.height
           ) {
             if (solid.mainType == 'stopWall') { collision.stopWall = true; }
-            if (solid.mainType == 'borderWallTop') { collision.borderTop = true; }
+            if (solid.mainType == 'borderWallTop') { continue; }
             entity.crouched = true;
           }
         }
       }
-
-      if (moveEntity) {
-        if (entity.mainType == 'player') {
-          scrollOffsetAdjustment.x = scrollOffsetAdjustment.y = 0;
-          if (collision.borderLeft) {
-            scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1.1;
-          }
-          if (collision.borderRight) {
-            scrollOffsetAdjustment.x = (objects.player.moveValues.x * objects.player.moveValues.amount) * -1.1;
-          }
-          if (collision.borderTop) {
-            scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1.1;
-          }
-          if (collision.borderBottom) {
-            scrollOffsetAdjustment.y = (objects.player.moveValues.y * objects.player.moveValues.amount) * -1.1;
-          }
-          scrollOffsetTotal.x += scrollOffsetAdjustment.x;
-          scrollOffsetTotal.y += scrollOffsetAdjustment.y;
+      if (moveEntity && entity.mainType == 'player') {
+        const moveValues = returnMoveValues(entity);
+        scrollOffsetAdjustment.x = scrollOffsetAdjustment.y = 0;
+        if (collision.borderLeft || collision.borderRight) {
+          scrollOffsetAdjustment.x = moveValues.totMovX * -1.1;
         }
+        if (collision.borderTop || collision.borderBottom) {
+          scrollOffsetAdjustment.y = moveValues.totMovY * -1.1;
+        }
+        scrollOffsetTotal.x += scrollOffsetAdjustment.x;
+        scrollOffsetTotal.y += scrollOffsetAdjustment.y;
       }
 
       collision.border = collision.borderLeft || collision.borderRight || collision.borderTop || collision.borderBottom;
@@ -1426,7 +1457,39 @@ function playSound(sound) {
   soundManager.play(sound);
 }
 
-window.startUp = function () {
-  loadMap();
-  updateInterval = setInterval(frameUpdate, 16);
+async function update(timeStamp) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  secondsPassed = (timeStamp - oldTimeStamp) / 1000;
+  oldTimeStamp = timeStamp;
+  totalTimePassed.total += secondsPassed;
+
+  const frameUpdateLoop = async () => {
+    for (let i = 0; i < objects.traps.length; i++) {
+      objects.traps[i].totalTimePassed += secondsPassed;
+    }
+    animateRunner(secondsPassed);
+    frameUpdate();
+    await null;
+  };
+
+  const playerUpdateLoop = async () => {
+    playerUpdate(secondsPassed);
+    await null;
+  };
+
+  frameUpdateLoop();
+  playerUpdateLoop();
+
+  // console.log(secondsPassed);
+  // window.requestAnimationFrame((timeStamp) => { update(timeStamp) });
 }
+
+
+window.startUp = () => {
+  loadMap();
+
+  setInterval(() => {
+    window.requestAnimationFrame((timeStamp) => { update(timeStamp) });
+  }, 1000 / config.frameRate);
+};
