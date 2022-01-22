@@ -266,7 +266,7 @@ class entity {
       if (types.indexOf('border') > -1) { objects.borders.push(this); }
       if (types.indexOf('token') > -1) { objects.tokens.push(this); }
       if (types.indexOf('grid') > -1) { objects.grids.push(this); }
-      if (types.indexOf('trap') > -1) { this.animationSpeed = getRandom(7, 20); objects.traps.push(this); }
+      if (types.indexOf('trap') > -1) { this.animationSpeed = getRandom(20, 35); objects.traps.push(this); }
       if (types.indexOf('background') > -1) { objects.background.push(this); }
       this.move = () => { this.moveDefault(this); };
     }
@@ -892,7 +892,7 @@ function animate(entity, secondsPassed) {
   switch (entity.mainType) {
     case 'trap':
       entity.sx = lerp(0, frames, entity.totalTimePassed / entity.animationSpeed);
-      entity.sy = height - entity.height - (oscillator(totalTimePassed.total, .5, .5) * 5);
+      entity.sy = height - entity.height - (oscillator(totalTimePassed.total, .2, .5) * 5);
       if (totalTimePassed.trap / entity.animationSpeed >= 1) {
         entity.sx = lerp(0, frames, 0);;
         entity.totalTimePassed = 0;
