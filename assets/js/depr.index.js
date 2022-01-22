@@ -64,3 +64,24 @@ makeBox = function () {
 
   makeBox = noop();
 }
+
+var drawGrid = function (size) {
+  throw "drawGrid is not yet implemented";
+  // FIXME: Objects drawn in this function are perfect match for grid. But if drawn outside of it, they do not fit perfectly.
+  const length = objects.grids.length;
+  for (let i = 0; i < length; i++) {
+    objects.nonFrozen.removeArray(objects.grids[i]);
+  }
+  objects.grids = [];
+  w = canvas.width;
+  h = canvas.height;
+  squareX = (w / size).round(1, true);
+  squareY = (h / size).round(1, true);
+  // console.log("Grid size: " + squareX + "x, " + squareY + "y");
+  for (let j = 0; j < squareY; j++) {
+    for (let i = 0; i < squareX; i++) {
+      new entity(size, size, i * size, j * size, ['grid', '#f3333d'], ['grid']);
+    }
+  }
+  new entity((100).round(editorPrecision), (100).round(editorPrecision), (300).round(editorPrecision), (400).round(editorPrecision), ['grid', 'white'], ['grid']);
+};

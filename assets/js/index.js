@@ -1,5 +1,3 @@
-// "use strict";
-
 const config = {
   gravityEnabled: true,
   gravity: .1,
@@ -208,7 +206,7 @@ soundManager.onready(function () {
 // * CLASSES ----------------------------------------------------------
 class entity {
   constructor(width, height, initPosx, initPosy, styles = ['draw', '#ff2f34'], types = ['solid']) {
-    ctx.fillRect(0, 0, canvas.width, canvas.height, 'black');
+    void ctx.fillRect(0, 0, canvas.width, canvas.height, 'black');
     this.width = width;
     this.height = height;
     this.initWidth = width;
@@ -650,27 +648,6 @@ function onKeyUp(event) {
 }
 
 // * FUNCTIONS --------------------------------------------------------
-var drawGrid = function (size) {
-  throw "drawGrid is not yet implemented";
-  // FIXME: Objects drawn in this function are perfect match for grid. But if drawn outside of it, they do not fit perfectly.
-  const length = objects.grids.length;
-  for (let i = 0; i < length; i++) {
-    objects.nonFrozen.removeArray(objects.grids[i]);
-  }
-  objects.grids = [];
-  w = canvas.width;
-  h = canvas.height;
-  squareX = (w / size).round(1, true);
-  squareY = (h / size).round(1, true);
-  // console.log("Grid size: " + squareX + "x, " + squareY + "y");
-  for (let j = 0; j < squareY; j++) {
-    for (let i = 0; i < squareX; i++) {
-      new entity(size, size, i * size, j * size, ['grid', '#f3333d'], ['grid']);
-    }
-  }
-  new entity((100).round(editorPrecision), (100).round(editorPrecision), (300).round(editorPrecision), (400).round(editorPrecision), ['grid', 'white'], ['grid']);
-};
-
 const drawStairs = function (x1, y1, x2, y2, color) {
   console.log("drawStairs");
   const slope = (y2 - y1) / (x2 - x1);
@@ -728,6 +705,7 @@ function playerUpdate(secondsPassed) {
   if (!objects.player) { return; }
   try {
     lastPos = [objects.player.posx, objects.player.posy];
+    lastMove = [objects.player.moveValues.x, objects.player.moveValues.y];
 
     objects.player.move();
     if (
@@ -859,13 +837,6 @@ function finalizeGroundEntities(entity) {
   const posy = (imgHeight - entity.posy - entity.height).round(1, true);
   const posxImg = (imgWidth - posx) > 0 ? posx : posx - imgWidth;
   const posyImg = (imgHeight - posy) > 0 ? posy : posy - imgHeight;
-  // const imgWidth = entity.sWidth;
-  // const imgHeight = entity.sHeight;
-  // const posx = (entity.posx).round(1, true);
-  // const posy = (entity.posy).round(1, true);
-  // const posxImg = posx;
-  // const posyImg = imgHeight - posy - entity.height;
-  // console.log(posx, posy, "|", posxImg, posyImg);
 
   switch (entity.mainType) {
     case 'trap':
@@ -1070,9 +1041,10 @@ const detectOutOfBounds = function (entity) {
     console.log("out of bounds");
     entity.posx = lastPos[0];
     entity.posy = lastPos[1];
-    entity.moveValues.x = moveValues.x > 0 ? -.2 : .2;
-    entity.moveValues.y = moveValues.y > 0 ? -.2 : .2;
+    entity.moveValues.x = -lastMove[0];
+    entity.moveValues.y = -lastMove[1];
     // respawn();
+    detectOutOfBoundsToggle = false;
     return false;
   }
 }
@@ -1414,7 +1386,7 @@ function makeDefaultEntities(justBorders = false) {
 }
 
 function loadMap(mapID = "init", clearMap = true, mapArray = null) {
-  ctx.fillRect(0, 0, canvas.width, canvas.height, 'black');
+  void ctx.fillRect(0, 0, canvas.width, canvas.height, 'black');
   if (clearMap) {
     scrollOffsetTotal = { x: 0, y: 0 };
     let keyList = Object.keys(objects);
@@ -1454,6 +1426,7 @@ function loadMap(mapID = "init", clearMap = true, mapArray = null) {
     makeDefaultEntities();
     throw "TypeError: loadMap.caller is null, recursion check failed.\n\nMaking default entities.";
   }
+  console.log("Map loaded.");
 }
 
 function playSound(sound) {
@@ -1488,7 +1461,6 @@ async function update(timeStamp) {
   // console.log(secondsPassed);
   // window.requestAnimationFrame((timeStamp) => { update(timeStamp) });
 }
-
 
 window.startUp = () => {
   loadMap();
