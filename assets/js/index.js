@@ -893,8 +893,8 @@ function animate(entity, secondsPassed) {
     case 'trap':
       entity.sx = lerp(0, frames, entity.totalTimePassed / entity.animationSpeed);
       entity.sy = height - entity.height - (oscillator(totalTimePassed.total, .2, .5) * 5);
-      if (totalTimePassed.trap / entity.animationSpeed >= 1) {
-        entity.sx = lerp(0, frames, 0);;
+      if (entity.totalTimePassed / entity.animationSpeed >= 1) {
+        entity.sx = lerp(0, frames, 0);
         entity.totalTimePassed = 0;
       }
       break;
@@ -986,6 +986,7 @@ function playerMovementGravity(player, secondsPassed) {
           moveValues.y = config.jumpHeight;
           if (!wallJump) {
             wallJumpTimer = setTimeout(() => {
+              // setTimeout(() => { wallJumpAllowed = false; }, 200);
               wallJumpAllowed = true;
               wallJumpTimer = null;
             }, 400);
@@ -1012,19 +1013,19 @@ function playerMovementGravity(player, secondsPassed) {
     wallJumpAllowed
   ) {
     player.touchedGround = false;
-    if (collisionSolids.left && keys.aKey[0]) {
+    if (collisionSolids.left && keys.dKey[0]) {
       player.touchedGround = true;
-      moveValues.x = 1.5;
-      keys.aKey[0] = false;
+      moveValues.x = 1;
+      // keys.dKey[0] = false;
       wallJump = true;
       playerDirection = "right";
       wallJumpAllowed = true;
       // playSound('wallJump');
       scoreUpdate(100);
-    } else if (collisionSolids.right && keys.dKey[0]) {
+    } else if (collisionSolids.right && keys.aKey[0]) {
       player.touchedGround = true;
-      moveValues.x = -1.5;
-      keys.dKey[0] = false;
+      moveValues.x = -1;
+      // keys.aKey[0] = false;
       wallJump = true;
       playerDirection = "left";
       wallJumpAllowed = true;
@@ -1315,7 +1316,10 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
             moveValues.newy + (entity.initHeight / 2) <= solid.posy + solid.height
           ) {
             if (solid.mainType == 'stopWall') { collision.stopWall = true; }
-            if (solid.mainType == 'borderWallTop') { continue; }
+            if (solid.mainType == 'borderWallTop') { 
+              if (entity.crouched) { entity.crouched = true;}
+              continue; 
+            }
             entity.crouched = true;
           }
         }
