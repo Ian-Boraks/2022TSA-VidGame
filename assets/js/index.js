@@ -345,6 +345,7 @@ Object.prototype.removeDict = function (what) {
     keyList.removeArray("player");
     keyList.removeArray("origin");
     keyList.removeArray("bounds");
+    keyList.removeArray("backgroundImg")
   }
   for (let i = 0; i < keyList.length; i++) {
     this[keyList[i]].removeArray(what);
@@ -1455,6 +1456,7 @@ function loadMap(mapID = "init", clearMap = true, mapArray = null) {
     keyList.removeArray("player");
     keyList.removeArray("origin");
     keyList.removeArray("bounds");
+    keyList.removeArray("backgroundImg")
     for (let i = 0; i < keyList.length; i++) {
       objects[keyList[i]] = [];
     }
