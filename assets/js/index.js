@@ -32,6 +32,7 @@ let objects = {
   player: null,
   origin: null,
   bounds: null,
+  backgroundImg: null,
   img: [],
   solids: [],
   ladders: [], // FIXME: Ladders can phase you through the ground
@@ -252,11 +253,13 @@ class entity {
     if (types.indexOf('player') > -1) {
       this.crouched = false;
       this.touchedGround = false;
+      this.touchedLadder = false;
       this.lastPos = [undefined, undefined];
       this.lastMove = [undefined, undefined];
       this.move = () => { this.movePlayer(this); };
       return;
     } else {
+      if (types.indexOf('backgroundImg') > -1) { this.animationSpeed = getRandom(20, 35); objects.backgroundImg = this; }
       if (types.indexOf('solid') > -1) { objects.solids.push(this); }
       if (types.indexOf('ladder') > -1) { objects.ladders.push(this); }
       if (types.indexOf('frozen') > -1) { objects.frozen.push(this); } else { objects.nonFrozen.push(this); }
@@ -690,12 +693,12 @@ function animateRunner(secondsPassed) {
 }
 
 function frameUpdate() {
+  for (let i = 0; i < objects.frozen.length; i++) {
+    objects.frozen[i].draw();
+  }
   for (let i = 0; i < objects.nonFrozen.length; i++) {
     objects.nonFrozen[i].move();
     objects.nonFrozen[i].draw();
-  }
-  for (let i = 0; i < objects.frozen.length; i++) {
-    objects.frozen[i].draw();
   }
   scoreUpdate(-1);
   return;
@@ -842,36 +845,64 @@ function finalizeGroundEntities(entity) {
     case 'trap':
       entity.sx = Math.random() * imgWidth;
       entity.sy = imgHeight - entity.height;
+      entity.sWidth = entity.width;
+      entity.sHeight = entity.height;
       break;
 
     case 'solid':
-      entity.sx = posxImg;
-      entity.sy = posyImg;
+      entity.sx = Math.random() * imgWidth / 4;
+      entity.sy = Math.random() * imgWidth / 4;
+      entity.sWidth = entity.width / 2;
+      entity.sHeight = entity.height / 2;
+      break;
+
+    case 'backgroundImg':
+      entity.sx = 0;
+      entity.sy = 0;
+      entity.sWidth = imgWidth;
+      entity.sHeight = imgHeight;
+      break;
 
     default:
-
       break;
   }
-  entity.sWidth = entity.width;
-  entity.sHeight = entity.height;
+
 }
 
 function animate(entity, secondsPassed) {
   let frames = spriteSheets[entity.imgLink][entity.animation]["frames"];
-  let height = spriteSheets[entity.imgLink][entity.animation]["sHeight"];
 
   switch (entity.mainType) {
     case 'trap':
+      let height = spriteSheets[entity.imgLink][entity.animation]["sHeight"];
       entity.sx = lerp(0, frames, entity.totalTimePassed / entity.animationSpeed);
       entity.sy = height - entity.height - (oscillator(totalTimePassed.total, .2, .5) * 5);
       if (entity.totalTimePassed / entity.animationSpeed >= 1) {
+        entity.sx = lerp(0, frames, 0);
+        entity.totalTimePassed = 0;
+      } else if (entity.totalTimePassed / entity.animationSpeed <= -1) {
         entity.sx = lerp(0, frames, 0);
         entity.totalTimePassed = 0;
       }
       break;
 
     case 'solid':
-      return;
+      break;
+
+    case 'backgroundImg':
+      if (entity.totalTimePassed > 0) {
+        entity.sx = lerp(653, frames, entity.totalTimePassed / entity.animationSpeed);
+      } else if (entity.totalTimePassed < 0) {
+        entity.sx = lerp(653, 0, Math.abs(entity.totalTimePassed) / entity.animationSpeed);
+      }
+      if (entity.totalTimePassed / entity.animationSpeed >= 1) {
+        entity.sx = lerp(653, frames, 0);
+        entity.totalTimePassed = 0;
+      } else if (entity.totalTimePassed / entity.animationSpeed <= -1) {
+        entity.sx = lerp(653, 0, 0);
+        entity.totalTimePassed = 0;
+      }
+      break;
 
     default:
       entity.sx += entity.sWidth;
@@ -1099,6 +1130,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           }
         }
       }
+      if (collision.ladder) { entity.touchedLadder = true; } else { entity.touchedLadder = false; }
       break;
     case "traps":
       checkArray = objects.traps;
@@ -1210,6 +1242,10 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
     case "solids":
       checkArray = objects.solids;
       length = checkArray.length;
+      let tempScroll = {
+        x: 0,
+        y: 0
+      }
       if (length <= 0) { break; }
       for (let i = 0; i < length; i++) {
         const solid = checkArray[i];
@@ -1272,7 +1308,9 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           moveValues.newy + (entity.height / 2) <= solid.posy + solid.height
         ) {
           if (solid.mainType == 'stopWall') { collision.stopWall = true; }
-          if (solid.mainType == 'borderWallTop') { collision.borderTop = true; }
+          if (solid.mainType == 'borderWallTop') {
+            collision.borderTop = true;
+          }
           if (moveEntity) {
             entity.posy = solid.posy - entity.height + (moveValues.totMovY * (collision.borderTop ? -1.1 : -1));
           }
@@ -1287,23 +1325,40 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
             moveValues.newy + entity.initHeight >= solid.posy &&
             moveValues.newy + (entity.initHeight / 2) <= solid.posy + solid.height
           ) {
-            if (solid.mainType == 'stopWall') { collision.stopWall = true; }
-            if (solid.mainType == 'borderWallTop') { 
-              if (entity.crouched) { entity.crouched = true;}
-              continue; 
+            if (solid.mainType == 'borderWallTop') {
+              collision.borderTop = true;
+              tempScroll.y -= moveValues.totMovY > 0 ? moveValues.totMovY : 0;
+              if (!entity.touchedLadder) {
+                entity.posy = entity.posy + tempScroll.y;
+              }
+              continue;
             }
             entity.crouched = true;
           }
+
+          // if (
+          //   entity.posx + entity.width - splitHitBoxOffset > solid.posx &&
+          //   entity.posx + splitHitBoxOffset < solid.posx + solid.width &&
+          //   moveValues.newy + entity.initHeight * 1.25 >= solid.posy &&
+          //   moveValues.newy + (entity.initHeight / 2) <= solid.posy + solid.height
+          // ) {
+          //   if (solid.mainType == 'borderWallTop') {
+          //     collision.borderTop = true;
+          //     tempScroll.y -= moveValues.totMovY > 0 ? moveValues.totMovY : 0;
+          //     entity.posy = entity.posy + tempScroll.y;
+          //     continue
+          //   }
+          // }
         }
       }
       if (moveEntity && entity.mainType == 'player') {
         const moveValues = returnMoveValues(entity);
         scrollOffsetAdjustment.x = scrollOffsetAdjustment.y = 0;
         if (collision.borderLeft || collision.borderRight) {
-          scrollOffsetAdjustment.x = moveValues.totMovX * -1.1;
+          scrollOffsetAdjustment.x += moveValues.totMovX * -1.1 + tempScroll.x;
         }
         if (collision.borderTop || collision.borderBottom) {
-          scrollOffsetAdjustment.y = moveValues.totMovY * -1.1;
+          scrollOffsetAdjustment.y += moveValues.totMovY * -1.1 + tempScroll.y;
         }
         scrollOffsetTotal.x += scrollOffsetAdjustment.x;
         scrollOffsetTotal.y += scrollOffsetAdjustment.y;
@@ -1323,6 +1378,13 @@ function makeDefaultEntities(justBorders = false) {
   const borderThickness = config.borderThickness;
   const borderColor = debugMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0)';
   const defaultEntities = [
+    !justBorders ?
+      {
+        "width": canvas.width, "height": canvas.height,
+        "initPosx": 0, "initPosy": 0,
+        "styles": ["img", 'backgroundImg', 'idle'],
+        "types": ["backgroundImg", "background", "frozen"]
+      } : null,
     !justBorders ?
       {
         "width": 1000000, "height": 600,
@@ -1360,7 +1422,7 @@ function makeDefaultEntities(justBorders = false) {
       "initPosx": canvas.width - borderThickness - 700, "initPosy": 0,
       "styles": ["draw", borderColor],
       "types": ["borderWallRight", "border", "solid", "frozen"]
-    }
+    },
   ];
 
   // On the creation of default entities, the game will check if the origin and player are created. If not, it will create them.
@@ -1445,6 +1507,7 @@ async function update(timeStamp) {
     for (let i = 0; i < objects.traps.length; i++) {
       objects.traps[i].totalTimePassed += secondsPassed;
     }
+    objects.backgroundImg.totalTimePassed -= scrollOffsetAdjustment.x / 100;
     animateRunner(secondsPassed);
     frameUpdate();
     await null;
@@ -1464,6 +1527,7 @@ async function update(timeStamp) {
 
 window.startUp = () => {
   loadMap();
+  // window.requestAnimationFrame((timeStamp) => { update(timeStamp) });
 
   setInterval(() => {
     window.requestAnimationFrame((timeStamp) => { update(timeStamp) });

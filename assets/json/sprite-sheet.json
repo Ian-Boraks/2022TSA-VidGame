@@ -45,13 +45,13 @@
 		}
 	},
   "solid_brick": {
-    "img": "/assets/img/repeating.solid_brick.png",
+    "img": "/assets/img/Stone.png",
     "idle": {
       "frames": 1,
       "sx": 0,
       "sy": 0,
-      "sWidth": 4112,
-      "sHeight": 4112
+      "sWidth": 1500,
+      "sHeight": 1500
     }
   },
   "trap": {
@@ -62,6 +62,16 @@
       "sy": 0,
       "sWidth": 998,
       "sHeight": 754
+    }
+  },
+  "backgroundImg": {
+    "img": "/assets/img/background.png",
+    "idle": {
+      "frames": 1306,
+      "sx": 653,
+      "sy": 0,
+      "sWidth": 653,
+      "sHeight": 170
     }
   }
 }
