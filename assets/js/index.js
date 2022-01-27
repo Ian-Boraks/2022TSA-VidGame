@@ -806,7 +806,7 @@ function scoreUpdate(value = 0) {
         editorText2 += "1: LADDER, 2: TRAP, 3: TOKEN, ͇4͇:͇ ͇S͇O͇L͇I͇D͇, 5: STAIRS, 6: BACKGROUND"
         break;
       case 'stair':
-        editorText2 += "1: LADDER, 2: TRAP, 3: TOKEN, 4: SOLID, ͇5̳:̳ ̳S̳T̳A̳I̳R̳, 6: BACKGROUND"
+        editorText2 += "1: LADDER, 2: TRAP, 3: TOKEN, 4: SOLID, ͇5̳:̳ ̳S̳T̳A̳I̳R̳S̳, 6: BACKGROUND"
         break;
       case 'background':
         editorText2 += "1: LADDER, 2: TRAP, 3: TOKEN, 4: SOLID, 5: STAIRS, ͇6͇:͇ ͇B͇A͇C͇K͇G͇R͇O̳U̳N̳D͇"
@@ -1457,7 +1457,7 @@ function makeDefaultEntities(justBorders = false) {
   loadMap(null, false, defaultEntities);
 }
 
-function loadMap(mapID = "init", clearMap = true, mapArray = null) {
+function loadMap(mapID = "stage2", clearMap = true, mapArray = null) {
   void ctx.fillRect(0, 0, canvas.width, canvas.height, 'black');
   if (clearMap) {
     scrollOffsetTotal = { x: 0, y: 0 };
@@ -1518,7 +1518,7 @@ async function update(timeStamp) {
     for (let i = 0; i < objects.traps.length; i++) {
       objects.traps[i].totalTimePassed += secondsPassed;
     }
-    objects.backgroundImg.totalTimePassed -= scrollOffsetAdjustment.x / 100;
+    objects.backgroundImg.totalTimePassed -= (scrollOffsetAdjustment.x / 300).round(.001);
     animateRunner(secondsPassed);
     frameUpdate();
     await null;
