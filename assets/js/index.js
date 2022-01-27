@@ -1183,11 +1183,20 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
             moveValues.newy <= token.posy + token.height
           )
         ) {
-          scoreUpdate(1000);
-          if (!editorMode) {
-            objects.removeDict(token);
+          switch (entity.mainType) {
+            case 'nextStageToken':
+              // TODO: Add next stage token
+              console.log("next stage")
+              break;
+          
+            default:
+              scoreUpdate(1000);
+              if (!editorMode) {
+                objects.removeDict(token);
+              }
+              playSound('pickUp');
+              break;
           }
-          playSound('pickUp');
         }
       }
       break;
