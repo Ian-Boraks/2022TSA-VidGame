@@ -38,7 +38,7 @@ function playerMovementNoGravity(player) {
     moveValues.y = 1;
   } else {
     moveValues.x = 0;
-    moveValues.y = 0;
+    moveValues.y = 02;
   }
 
   lastPos = [player.posx, player.posy];
