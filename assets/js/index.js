@@ -1,10 +1,12 @@
+
 const config = {
   gravityEnabled: true,
-  gravity: .1,
-  jumpHeight: 2,
-  defaultPlayerSpeed: 7,
-  playerMaxSpeedError: 20,
-  playerMaxSpeed: 1,
+  gravity: .05,
+  jumpHeight: 1,
+  playerDefaultSpeed: .5,
+  playerFriction: .08,
+  playerMaxSpeed: 12,
+  playerMaxSpeedError: 30,
   scrollDistance: 300,
   borderThickness: 300,
   defaultAnimationRunDelay: 1,
@@ -24,6 +26,32 @@ let typeOfEntity = 'solid';
 
 let map = {};
 let spriteSheets = {};
+
+$.getJSON(
+  {
+    async: false,
+    url: '/assets/json/map.json',
+    success: (data) => {
+      map = data;
+    },
+    error: function (data, jqXHR, textStatus, errorThrown) {
+      console.log(jqXHR);
+      console.log(textStatus);
+      console.log(errorThrown);
+    }
+  }
+)
+
+$.getJSON(
+  {
+    async: false,
+    url: '/assets/json/sprite-sheet.json',
+    success: function (data) {
+      spriteSheets = data;
+    }
+  }
+)
+
 let animationRunDelay = config.defaultAnimationRunDelay;
 let animationRunDelayCounter = 0;
 let playerDirection = "right";
@@ -71,13 +99,7 @@ let detectOutOfBoundsToggle = true;
 let backgroundMusicPlaying = false;
 let score = 0;
 
-let secondsPassed = 0;
-let oldTimeStamp = 0;
-let totalTimePassed = {
-  trap: 0,
-  total: 0,
-};
-
+let totalFrames = 0;
 
 // * ON LOAD --------------------------------------------------------
 // alert("To use the editor, press enter.\nEditor controls:\nClick+Drag to make solid\nShift+Click+Drag to make ladder\nPress enter again to exit and to have map changes output to console\n\n\nGame Controls:\nSpace to jump\nA to move left\nD to move right\nS to crouch");
@@ -114,26 +136,6 @@ window.addEventListener('resize', () => {
     makeDefaultEntities(true);
   }
 });
-
-$.getJSON(
-  {
-    async: false,
-    url: '/assets/json/map.json',
-    success: function (data) {
-      map = data;
-    }
-  }
-)
-
-$.getJSON(
-  {
-    async: false,
-    url: '/assets/json/sprite-sheet.json',
-    success: function (data) {
-      spriteSheets = data;
-    }
-  }
-)
 
 window.addEventListener('DOMContentLoaded', function () {
   // ! This is an example of how to use the sound function
@@ -204,139 +206,34 @@ soundManager.onready(function () {
   });
 });
 
-// * CLASSES ----------------------------------------------------------
-class entity {
-  constructor(width, height, initPosx, initPosy, styles = ['draw', '#ff2f34'], types = ['solid']) {
-    void ctx.fillRect(0, 0, canvas.width, canvas.height, 'black');
-    this.width = width;
-    this.height = height;
-    this.initWidth = width;
-    this.initHeight = height;
-    this.posx = initPosx;
-    this.posy = initPosy;
-    this.types = types;
-    this.totalTimePassed = 0;
-    this.mainType = types[0];
-    this.moveValues = { x: 0, y: 0, amount: 0, speed: 7 };
-
-    switch (styles[0]) {
-      case 'img':
-        this.style = 'img';
-        objects.img.push(this);
-        this.imgLink = styles[1];
-        this.img = new Image();
-        this.img.src = spriteSheets[styles[1]]["img"];
-        this.animation = styles[2];
-        this.sx = spriteSheets[styles[1]][this.animation]["sx"];
-        this.sy = spriteSheets[styles[1]][this.animation]["sy"];
-        this.sWidth = spriteSheets[styles[1]][this.animation]["sWidth"];
-        this.sHeight = spriteSheets[styles[1]][this.animation]["sHeight"];
-        if (this.mainType != 'player') {
-          finalizeGroundEntities(this);
-        }
-        this.draw = () => { this.drawImg(this); };
-        break;
-      case 'draw':
-        this.style = 'draw';
-        this.color = styles[1];
-        this.draw = () => { this.drawRect(this); };
-        break;
-      case 'grid':
-        this.style = 'grid';
-        this.color = styles[1];
-        break;
-      default:
-        console.log('Error: entity style not found (setup)');
-        break;
-    }
-
-    if (types.indexOf('player') > -1) {
-      this.crouched = false;
-      this.touchedGround = false;
-      this.touchedLadder = false;
-      this.lastPos = [undefined, undefined];
-      this.lastMove = [undefined, undefined];
-      this.move = () => { this.movePlayer(this); };
-      return;
-    } else {
-      if (types.indexOf('backgroundImg') > -1) { this.animationSpeed = getRandom(20, 35); objects.backgroundImg = this; }
-      if (types.indexOf('solid') > -1) { objects.solids.push(this); }
-      if (types.indexOf('ladder') > -1) { objects.ladders.push(this); }
-      if (types.indexOf('frozen') > -1) { objects.frozen.push(this); } else { objects.nonFrozen.push(this); }
-      if (types.indexOf('stair') > -1) { objects.stairs.push(this); }
-      if (types.indexOf('border') > -1) { objects.borders.push(this); }
-      if (types.indexOf('token') > -1) { objects.tokens.push(this); }
-      if (types.indexOf('grid') > -1) { objects.grids.push(this); }
-      if (types.indexOf('trap') > -1) { this.animationSpeed = getRandom(20, 35); objects.traps.push(this); }
-      if (types.indexOf('background') > -1) { objects.background.push(this); }
-      this.move = () => { this.moveDefault(this); };
-    }
-  }
-
-  drawImg = () => {
-    ctx.drawImage(this.img, this.sx, this.sy, this.sWidth, this.sHeight, this.posx, this.posy, this.width, this.height);
-  }
-
-  drawRect = () => {
-    ctx.beginPath();
-    ctx.fillStyle = this.color;
-    ctx.fillRect(this.posx, this.posy, this.width, this.height);
-    ctx.closePath();
-  }
-
-  drawGrid = () => {
-    ctx.beginPath();
-    ctx.strokeStyle = this.color;
-    ctx.lineWidth = 3;
-    ctx.rect(this.posx, this.posy, this.width, this.height);
-    ctx.stroke();
-    ctx.closePath();
-  }
-
-  movePlayer = () => {
-    if (config.gravityEnabled) { playerMovementGravity(this, secondsPassed); } else { playerMovementNoGravity(this, secondsPassed); }
-
-    if (this.moveValues.amount == 0) { return; }
-
-    this.posx += this.moveValues.x * this.moveValues.amount;
-    this.posy += this.moveValues.y * this.moveValues.amount;
-  }
-
-  moveDefault = () => {
-    if (scrollOffsetAdjustment.x == 0 && scrollOffsetAdjustment.y == 0) { return; }
-
-    this.posx += scrollOffsetAdjustment.x;
-    this.posy += scrollOffsetAdjustment.y;
-  }
-}
-
 // * UTILITY FUNCTIONS ------------------------------------------------
-function noop() { /* No operation function */ }
+const noop = () => { /* No operation function */ };
 
 Number.prototype.round = function (num, roundUp = false) {
   if (roundUp) {
     return Math.ceil(this / num) * num;
   } else {
     return Math.round(this / num) * num;
-  }
-}
+  };
+};
 
 Object.prototype.getKeysByValue = function (selection) {
   // console.log(
   //   Object.keys(Object.fromEntries(Object.entries(this).filter((element) => element[1][0] == selection)))
   // );
   return Object.keys(Object.fromEntries(Object.entries(this).filter((element) => element[1][0] == selection)));
-}
+};
 
 Array.prototype.filterArray = function (value) {
   return this.filter(function (ele) {
     return ele != value;
   });
-}
+};
 
 Array.prototype.removeArray = function (what) {
-  const index = this.indexOf(what)
-  if (index > -1) { this.splice(index, 1); }
+  // console.log(what);
+  const index = this.indexOf(what);
+  if (index > -1) { this.splice(index, 1); };
 };
 
 Object.prototype.removeDict = function (what) {
@@ -346,12 +243,49 @@ Object.prototype.removeDict = function (what) {
     keyList.removeArray("origin");
     keyList.removeArray("bounds");
     keyList.removeArray("backgroundImg")
-  }
+  };
   for (let i = 0; i < keyList.length; i++) {
     this[keyList[i]].removeArray(what);
-  }
+  };
 };
 
+const updateClipboard = function (newClip) {
+  navigator.clipboard.writeText(newClip).then(function () {
+    /* clipboard successfully set */
+  }, function () {
+    /* clipboard write failed */
+  });
+};
+
+const returnMoveValues = function (entity) {
+  return {
+    x: entity.moveValues.x,
+    y: entity.moveValues.y,
+    amount: entity.moveValues.amount,
+
+    totMovX: entity.moveValues.x,
+    totMovY: entity.moveValues.y,
+
+    newx: entity.posx + entity.moveValues.x,
+    newy: entity.posy + entity.moveValues.y
+  };
+};
+
+const lerp = function (start, end, speed) {
+  return start + (end - start) * speed;
+};
+
+const oscillator = function (time, frequency = 1, amplitude = 1, phase = 0, offset = 0) {
+  return Math.sin(time * frequency * Math.PI * 2 + phase * Math.PI * 2) * amplitude + offset;
+};
+
+const getRandom = function (min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.random() * (max - min) + min; //The maximum is exclusive and the minimum is inclusive
+};
+
+// * EDITOR -----------------------------------------------------------
 function getMousePosition(canvas, start, event) {
   const x = ((event.clientX * canvas.width / canvas.clientWidth) - objects.origin.posx).round(editorPrecision);
   const y = (((innerHeight - event.clientY) * canvas.height / canvas.clientHeight) - objects.origin.posy).round(editorPrecision);
@@ -428,40 +362,109 @@ canvas.addEventListener("mouseup", function (e) {
   getMousePosition(canvas, false, e);
 });
 
-function updateClipboard(newClip) {
-  navigator.clipboard.writeText(newClip).then(function () {
-    /* clipboard successfully set */
-  }, function () {
-    /* clipboard write failed */
-  });
-}
+// * CLASSES ----------------------------------------------------------
+class entity {
+  constructor(width, height, initPosx, initPosy, styles = ['draw', '#ff2f34'], types = ['solid']) {
+    void ctx.fillRect(0, 0, canvas.width, canvas.height, 'black');
+    this.width = width;
+    this.height = height;
+    this.initWidth = width;
+    this.initHeight = height;
+    this.posx = initPosx;
+    this.posy = initPosy;
+    this.types = types;
+    this.totalTimePassed = 0;
+    this.mainType = types[0];
+    this.moveValues = { x: 0, y: 0, amount: 0, speed: config.playerDefaultSpeed };
 
-const returnMoveValues = (entity) => {
-  return {
-    x: entity.moveValues.x,
-    y: entity.moveValues.y,
-    amount: entity.moveValues.amount,
+    switch (styles[0]) {
+      case 'img':
+        this.style = 'img';
+        objects.img.push(this);
+        this.imgLink = styles[1];
+        this.img = new Image();
+        this.img.src = spriteSheets[styles[1]]["img"];
+        this.animation = styles[2];
+        this.sx = spriteSheets[styles[1]][this.animation]["sx"];
+        this.sy = spriteSheets[styles[1]][this.animation]["sy"];
+        this.sWidth = spriteSheets[styles[1]][this.animation]["sWidth"];
+        this.sHeight = spriteSheets[styles[1]][this.animation]["sHeight"];
+        if (this.mainType != 'player') {
+          finalizeGroundEntities(this);
+        }
+        this.draw = () => { this.drawImg(this); };
+        break;
+      case 'draw':
+        this.style = 'draw';
+        this.color = styles[1];
+        this.draw = () => { this.drawRect(this); };
+        break;
+      case 'grid':
+        this.style = 'grid';
+        this.color = styles[1];
+        break;
+      default:
+        console.log('Error: entity style not found (setup)');
+        break;
+    }
 
-    totMovX: entity.moveValues.x * entity.moveValues.amount,
-    totMovY: entity.moveValues.y * entity.moveValues.amount,
-
-    newx: entity.posx + (entity.moveValues.x * entity.moveValues.amount),
-    newy: entity.posy + (entity.moveValues.y * entity.moveValues.amount)
+    if (types.indexOf('player') > -1) {
+      this.crouched = false;
+      this.touchedGround = false;
+      this.touchedLadder = false;
+      this.lastPos = [undefined, undefined];
+      this.lastMove = [undefined, undefined];
+      this.move = () => { this.movePlayer(this); };
+      return;
+    } else {
+      if (types.indexOf('backgroundImg') > -1) { this.animationSpeed = getRandom(20, 35); objects.backgroundImg = this; }
+      if (types.indexOf('solid') > -1) { objects.solids.push(this); }
+      if (types.indexOf('ladder') > -1) { objects.ladders.push(this); }
+      if (types.indexOf('frozen') > -1) { objects.frozen.push(this); } else { objects.nonFrozen.push(this); }
+      if (types.indexOf('stair') > -1) { objects.stairs.push(this); }
+      if (types.indexOf('border') > -1) { objects.borders.push(this); }
+      if (types.indexOf('token') > -1) { objects.tokens.push(this); }
+      if (types.indexOf('grid') > -1) { objects.grids.push(this); }
+      if (types.indexOf('trap') > -1) { this.animationSpeed = getRandom(20, 35); objects.traps.push(this); }
+      if (types.indexOf('background') > -1) { objects.background.push(this); }
+      this.move = () => { this.moveDefault(this); };
+    }
   }
-}
 
-const lerp = (start, end, speed) => {
-  return start + (end - start) * speed;
-}
+  drawImg = () => {
+    ctx.drawImage(this.img, this.sx, this.sy, this.sWidth, this.sHeight, this.posx, this.posy, this.width, this.height);
+  }
 
-const oscillator = (time, frequency = 1, amplitude = 1, phase = 0, offset = 0) => {
-  return Math.sin(time * frequency * Math.PI * 2 + phase * Math.PI * 2) * amplitude + offset;
-}
+  drawRect = () => {
+    ctx.beginPath();
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.posx, this.posy, this.width, this.height);
+    ctx.closePath();
+  }
 
-const getRandom = (min, max) => {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.random() * (max - min) + min; //The maximum is exclusive and the minimum is inclusive
+  drawGrid = () => {
+    ctx.beginPath();
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 3;
+    ctx.rect(this.posx, this.posy, this.width, this.height);
+    ctx.stroke();
+    ctx.closePath();
+  }
+
+  movePlayer = () => {
+
+    if (this.moveValues.x == 0 && this.moveValues.y == 0) { return; }
+
+    this.posx += this.moveValues.x;
+    this.posy += this.moveValues.y;
+  }
+
+  moveDefault = () => {
+    if (scrollOffsetAdjustment.x == 0 && scrollOffsetAdjustment.y == 0) { return; }
+
+    this.posx += scrollOffsetAdjustment.x;
+    this.posy += scrollOffsetAdjustment.y;
+  }
 }
 
 // * KEYBOARD CONTROLS ------------------------------------------------
@@ -683,54 +686,13 @@ const drawStairs = function (x1, y1, x2, y2, color) {
   updateClipboard(JSON.stringify(boxHolder));
 }
 
-function animateRunner(secondsPassed) {
+function animateRunner() {
+  secondsPassed = totalFrames / config.fps;
   if (animationRunDelayCounter <= animationRunDelay) { animationRunDelayCounter++; } else { animationRunDelayCounter = 0; }
   if (animationRunDelayCounter == animationRunDelay) {
     for (let i = 0; i < objects.img.length; i++) {
       animate(objects.img[i], secondsPassed);
     }
-  }
-  return;
-}
-
-function frameUpdate() {
-  for (let i = 0; i < objects.frozen.length; i++) {
-    objects.frozen[i].draw();
-  }
-  for (let i = 0; i < objects.nonFrozen.length; i++) {
-    objects.nonFrozen[i].move();
-    objects.nonFrozen[i].draw();
-  }
-  scoreUpdate(-1);
-  return;
-}
-
-function playerUpdate(secondsPassed) {
-  if (!objects.player) { return; }
-  try {
-    lastPos = [objects.player.posx, objects.player.posy];
-    lastMove = [objects.player.moveValues.x, objects.player.moveValues.y];
-
-    objects.player.move();
-    if (
-      playerMovementCheck &&
-      (Math.abs(lastPos[0] - objects.player.posx) > config.playerMaxSpeedError || Math.abs(lastPos[1] - objects.player.posy) > config.playerMaxSpeedError)
-    ) {
-      console.log("Player moved too fast");
-      objects.player.posx = lastPos[0];
-      objects.player.posy = lastPos[1];
-      let collision = detectCollision(objects.player, "solids", false);
-      if (collision.bottom) {
-        objects.player.posy = lastPos[1] + 4;
-      }
-      if (collision.top) {
-        objects.player.posy = lastPos[1] - 4;
-      }
-    }
-    playerMovementCheck = true;
-    objects.player.draw();
-  } catch (TypeError) {
-    // throw TypeError
   }
   return;
 }
@@ -877,7 +839,7 @@ function animate(entity, secondsPassed) {
     case 'trap':
       let height = spriteSheets[entity.imgLink][entity.animation]["sHeight"];
       entity.sx = lerp(0, frames, entity.totalTimePassed / entity.animationSpeed);
-      entity.sy = height - entity.height - (oscillator(totalTimePassed.total, .2, .5) * 5);
+      entity.sy = height - entity.height - (oscillator(totalFrames, .2, .5) * 5);
       if (entity.totalTimePassed / entity.animationSpeed >= 1) {
         entity.sx = lerp(0, frames, 0);
         entity.totalTimePassed = 0;
@@ -922,22 +884,15 @@ function switchAnimation(entity, animationID, animationSpeed = config.defaultAni
   entity.sHeight = spriteSheets[entity.imgLink][entity.animation]["sHeight"];
 }
 
-function playerMovementGravity(player, secondsPassed) {
-  // return;
-  let moveValues = player.moveValues;
-  moveValues.amount = moveValues.speed;
-  let wallJump = false;
+const playerMovementGravity = (delta) => {
+  let player;
+  let pMoveVal;
 
-  if (moveValues.y > -2) {
-    moveValues.y -= config.gravity;
-  }
-
-  if (moveValues.x > .1) {
-    moveValues.x -= player.touchedGround ? .15 : .01;
-  } else if (moveValues.x < -.1) {
-    moveValues.x += player.touchedGround ? .15 : .01;
-  } else {
-    moveValues.x = 0;
+  try {
+    player = objects.player;
+    pMoveVal = player.moveValues;
+  } catch (error) {
+    throw new Error("Player not found");
   }
 
   keysDown = keys.getKeysByValue(true);
@@ -965,28 +920,33 @@ function playerMovementGravity(player, secondsPassed) {
 
   if (!keys.sKey[0]) { player.crouched = false; }
 
-  for (let i = 0; i < keysDown.length; i++) {
+  const pCurMovVal = {
+    x: pMoveVal.x,
+    y: pMoveVal.y
+  }
+
+  for (i = 0; i < keysDown.length; i++) {
     switch (keysDown[i]) {
       case 'dKey':
-        // if (wallJump[0] == "left") { return; }
-        moveValues.x += Math.abs(moveValues.x) > (config.playerMaxSpeed) ? 0 : .25;
+        pMoveVal.x += pMoveVal.speed * delta;
+        if (Math.abs(pMoveVal.x) >= config.playerMaxSpeed) { pMoveVal.x = pCurMovVal.x; }
         if (player.touchedGround) { switchAnimation(player, 'walkR', 2); }
-        playerDirection = 'right';
+        playerDirection = "right";
         break;
       case 'sKey':
         player.crouched = true;
         break;
       case 'aKey':
-        // if (wallJump[0] == "right") { return; }
-        moveValues.x -= Math.abs(moveValues.x) > (config.playerMaxSpeed) ? 0 : .25;
+        pMoveVal.x += -pMoveVal.speed * delta;
+        if (Math.abs(pMoveVal.x) >= config.playerMaxSpeed) { pMoveVal.x = pCurMovVal.x; }
         if (player.touchedGround) { switchAnimation(player, 'walkL', 2); }
-        playerDirection = 'left';
+        playerDirection = "left";
         break;
       case 'spaceKey':
         if (player.touchedGround) {
           player.touchedGround = false;
           playSound('jump');
-          moveValues.y = config.jumpHeight;
+          pMoveVal.y += config.jumpHeight * delta;
           if (!wallJump) {
             wallJumpTimer = setTimeout(() => {
               // setTimeout(() => { wallJumpAllowed = false; }, 200);
@@ -1000,6 +960,23 @@ function playerMovementGravity(player, secondsPassed) {
     }
   }
 
+  const friction = () => {
+    if (pMoveVal.x > 1) {
+      pMoveVal.x -= config.playerFriction * delta * ((!player.touchedGround) ? .25 : 1);
+    } else if (pMoveVal.x < -1) {
+      pMoveVal.x += config.playerFriction * delta * ((!player.touchedGround) ? .25 : 1);
+    }
+    else {
+      pMoveVal.x = 0;
+    }
+  }
+
+  const gravity = () => {
+    if (pMoveVal.y < -config.playerMaxSpeed) { return; }
+    if (pMoveVal.y > config.playerMaxSpeed * 2) { pMoveVal.y = pCurMovVal.y; }
+    pMoveVal.y -= config.gravity * delta;
+  }
+
   void detectCollision(player, "stairs");
   let collisionSolids = detectCollision(player);
   let collisionLadders = detectCollision(player, "ladders");
@@ -1007,46 +984,52 @@ function playerMovementGravity(player, secondsPassed) {
   void detectCollision(player, "traps", false);
   void detectOutOfBounds(player);
 
-  if (
-    keys.spaceKey[0] &&
-    !player.touchedGround &&
-    !collisionSolids.borderLeft &&
-    !collisionSolids.borderRight &&
-    !collisionLadders.ladder &&
-    wallJumpAllowed
-  ) {
-    player.touchedGround = false;
-    if (collisionSolids.left && keys.dKey[0]) {
-      player.touchedGround = true;
-      moveValues.x = 1;
-      // keys.dKey[0] = false;
-      wallJump = true;
-      playerDirection = "right";
-      wallJumpAllowed = true;
-      // playSound('wallJump');
-      scoreUpdate(100);
-    } else if (collisionSolids.right && keys.aKey[0]) {
-      player.touchedGround = true;
-      moveValues.x = -1;
-      // keys.aKey[0] = false;
-      wallJump = true;
-      playerDirection = "left";
-      wallJumpAllowed = true;
-      // playSound('wallJump');
-      scoreUpdate(100);
-    }
-  }
-  if (keys.aKey[1] && !wallJump && player.touchedGround) {
-    keys.aKey[0] = true;
-    wallJumpAllowed = false;
-    if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
-  }
-  if (keys.dKey[1] && !wallJump && player.touchedGround) {
-    keys.dKey[0] = true;
-    wallJumpAllowed = false;
-    if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
-  }
+  // if (
+  //   keys.spaceKey[0] &&
+  //   !player.touchedGround &&
+  //   !collisionSolids.borderLeft &&
+  //   !collisionSolids.borderRight &&
+  //   !collisionLadders.ladder &&
+  //   wallJumpAllowed
+  // ) {
+  //   player.touchedGround = false;
+  //   if (collisionSolids.left && keys.dKey[0]) {
+  //     player.touchedGround = true;
+  //     moveValues.x = 1;
+  //     // keys.dKey[0] = false;
+  //     wallJump = true;
+  //     playerDirection = "right";
+  //     wallJumpAllowed = true;
+  //     // playSound('wallJump');
+  //     scoreUpdate(100);
+  //   } else if (collisionSolids.right && keys.aKey[0]) {
+  //     player.touchedGround = true;
+  //     moveValues.x = -1;
+  //     // keys.aKey[0] = false;
+  //     wallJump = true;
+  //     playerDirection = "left";
+  //     wallJumpAllowed = true;
+  //     // playSound('wallJump');
+  //     scoreUpdate(100);
+  //   }
+  // }
+  // if (keys.aKey[1] && !wallJump && player.touchedGround) {
+  //   keys.aKey[0] = true;
+  //   wallJumpAllowed = false;
+  //   if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
+  // }
+  // if (keys.dKey[1] && !wallJump && player.touchedGround) {
+  //   keys.dKey[0] = true;
+  //   wallJumpAllowed = false;
+  //   if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
+  // }
+
   player.height = player.crouched ? player.initHeight / 2 : player.initHeight;
+
+  gravity();
+  friction();
+
+  player.move();
 }
 
 const detectOutOfBounds = function (entity) {
@@ -1083,6 +1066,7 @@ const detectOutOfBounds = function (entity) {
 
 const detectCollision = function (entity, checkArrayName = "solids", moveEntity = true) {
   // TODO: Remove depreciated STOPWALL & FLOOR collision detection
+  delta = MainLoop.getSimulationTimestep();
   let checkArray;
   let splitHitBoxOffset = 3;
   let collision = {
@@ -1127,7 +1111,9 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         ) {
           collision.ladder = true;
           if (moveEntity) {
-            entity.moveValues.y = 1;
+            entity.touchedGround = false;
+            if (entity.moveValues.y >= config.playerMaxSpeed) { continue; };
+            entity.moveValues.y += config.playerDefaultSpeed * delta / 6;
           }
         }
       }
@@ -1188,7 +1174,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
               // TODO: Add next stage token
               console.log("next stage")
               break;
-          
+
             default:
               scoreUpdate(1000);
               if (!editorMode) {
@@ -1236,13 +1222,13 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         if (collision.right || collision.left && !collision.top) { collision.stairMove = true; }
 
         if (moveEntity && collision.left && entity.touchedGround && !collision.top) {
-          entity.moveValues.y = .5;
+          entity.moveValues.y += config.playerDefaultSpeed * delta / 4;
           wallJumpAllowed = false;
           if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
           break;
         }
         if (moveEntity && collision.right && entity.touchedGround && !collision.top) {
-          entity.moveValues.y = .5;
+          entity.moveValues.y += config.playerDefaultSpeed * delta / 4;
           wallJumpAllowed = false;
           if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
           break;
@@ -1268,9 +1254,9 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           entity.posy + splitHitBoxOffset < solid.posy + solid.height
         ) {
           if (solid.mainType == 'stopWall') { collision.stopWall = true; }
-          if (solid.mainType == 'borderWallLeft') { collision.borderLeft = true; }
+          if (solid.mainType == 'borderWallLeft') { collision.borderLeft = true; continue; }
           // if (moveEntity && !collisionStairs.stairMove) {
-          entity.posx = solid.posx + solid.width + (moveValues.totMovX * -1);
+          entity.moveValues.x = 0;
           // }
           collision.left = true;
           // console.log('left');
@@ -1283,9 +1269,9 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           entity.posy + splitHitBoxOffset < solid.posy + solid.height
         ) {
           if (solid.mainType == 'stopWall') { collision.stopWall = true; }
-          if (solid.mainType == 'borderWallRight') { collision.borderRight = true; }
+          if (solid.mainType == 'borderWallRight') { collision.borderRight = true; continue; }
           // if (moveEntity && !collisionStairs.stairMove) {
-          entity.posx = solid.posx - entity.width + (moveValues.totMovX * -1);
+          entity.moveValues.x = 0;
           // }
           collision.right = true;
           // console.log('right');
@@ -1298,34 +1284,18 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           moveValues.newy + (entity.height / 2) >= solid.posy &&
           moveValues.newy <= solid.posy + solid.height
         ) {
+          entity.posy = solid.posy + solid.height;
           if (solid.mainType == 'stopWall') { collision.stopWall = true; }
-          if (solid.mainType == 'borderWallBottom') { collision.borderBottom = true; }
+          if (solid.mainType == 'borderWallBottom') { collision.borderBottom = true; continue; }
           else if (entity == objects.player) {
             if (moveEntity) {
               entity.touchedGround = true;
             }
           }
           if (moveEntity) {
-            entity.posy = solid.posy + solid.height + (moveValues.totMovY * (collision.borderBottom ? -1.1 : -1));
+            entity.moveValues.y = 0;
           }
           collision.bottom = true;
-        }
-
-        if (
-          entity.posx + entity.width - splitHitBoxOffset > solid.posx &&
-          entity.posx + splitHitBoxOffset < solid.posx + solid.width &&
-          moveValues.newy + entity.height >= solid.posy &&
-          moveValues.newy + (entity.height / 2) <= solid.posy + solid.height
-        ) {
-          if (solid.mainType == 'stopWall') { collision.stopWall = true; }
-          if (solid.mainType == 'borderWallTop') {
-            collision.borderTop = true;
-          }
-          if (moveEntity) {
-            entity.posy = solid.posy - entity.height + (moveValues.totMovY * (collision.borderTop ? -1.1 : -1));
-          }
-          collision.top = true;
-          // console.log('top');
         }
 
         if (entity == objects.player && moveEntity) {
@@ -1344,6 +1314,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
               continue;
             }
             entity.crouched = true;
+            entity.height = entity.crouched ? entity.initHeight / 2 : entity.initHeight;
           }
 
           // if (
@@ -1360,15 +1331,44 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           //   }
           // }
         }
+
+
+        if (
+          entity.posx + entity.width - splitHitBoxOffset > solid.posx &&
+          entity.posx + splitHitBoxOffset < solid.posx + solid.width &&
+          moveValues.newy + entity.height >= solid.posy &&
+          moveValues.newy + (entity.height / 2) <= solid.posy + solid.height
+        ) {
+
+          if (solid.mainType == 'stopWall') { collision.stopWall = true; }
+          if (solid.mainType == 'borderWallTop') {
+            entity.moveValues.y = entity.moveValues.y;
+            collision.borderTop = true;
+            continue;
+          }
+          if (moveEntity) {
+            // entity.moveValues.y = 0;
+            entity.posy = solid.posy - entity.height - (splitHitBoxOffset * 4);
+          }
+          collision.top = true;
+          // console.log('top');
+        }
       }
+
+
       if (moveEntity && entity.mainType == 'player') {
         const moveValues = returnMoveValues(entity);
         scrollOffsetAdjustment.x = scrollOffsetAdjustment.y = 0;
         if (collision.borderLeft || collision.borderRight) {
-          scrollOffsetAdjustment.x += moveValues.totMovX * -1.1 + tempScroll.x;
+          scrollOffsetAdjustment.x += (moveValues.totMovX * -1) + tempScroll.x;
+          entity.moveValues.x = 0;
         }
         if (collision.borderTop || collision.borderBottom) {
-          scrollOffsetAdjustment.y += moveValues.totMovY * -1.1 + tempScroll.y;
+          scrollOffsetAdjustment.y += (moveValues.totMovY * -1) + tempScroll.y;
+          if (collision.borderTop) {
+            scrollOffsetAdjustment.y = (moveValues.newy + entity.height) - solid.posy;
+          }
+          // entity.moveValues.y = 0;
         }
         scrollOffsetTotal.x += scrollOffsetAdjustment.x;
         scrollOffsetTotal.y += scrollOffsetAdjustment.y;
@@ -1462,11 +1462,7 @@ function loadMap(mapID = "stage2", clearMap = true, mapArray = null) {
   if (clearMap) {
     scrollOffsetTotal = { x: 0, y: 0 };
     let keyList = Object.keys(objects);
-    keyList.removeArray("player");
-    keyList.removeArray("origin");
-    keyList.removeArray("bounds");
-    keyList.removeArray("backgroundImg")
-    for (let i = 0; i < keyList.length; i++) {
+    for (let i = 3; i < keyList.length; i++) {
       objects[keyList[i]] = [];
     }
     objects.player = null;
@@ -1494,12 +1490,11 @@ function loadMap(mapID = "stage2", clearMap = true, mapArray = null) {
 
   // FIXME: This is apparently deprecated now and should be fixed. But I have no way to stop recursion.
   try {
-    if (loadMap.caller.name != "makeDefaultEntities") { makeDefaultEntities(); }
+    if (loadMap.caller.name != "makeDefaultEntities") { makeDefaultEntities(); } else { console.log("Map loaded."); }
   } catch (TypeError) {
     makeDefaultEntities();
     throw "TypeError: loadMap.caller is null, recursion check failed.\n\nMaking default entities.";
   }
-  console.log("Map loaded.");
 }
 
 function playSound(sound) {
@@ -1507,40 +1502,98 @@ function playSound(sound) {
   soundManager.play(sound);
 }
 
-async function update(timeStamp) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+const update = (delta) => {
+  let player = objects.player;
 
-  secondsPassed = (timeStamp - oldTimeStamp) / 1000;
-  oldTimeStamp = timeStamp;
-  totalTimePassed.total += secondsPassed;
+  if (!player) { return; }
+  try {
+    lastPos = [player.posx, player.posy];
+    lastMove = [player.moveValues.x, player.moveValues.y];
 
-  const frameUpdateLoop = async () => {
-    for (let i = 0; i < objects.traps.length; i++) {
-      objects.traps[i].totalTimePassed += secondsPassed;
+    playerMovementGravity(delta);
+    if (
+      playerMovementCheck &&
+      (Math.abs(lastPos[0] - player.posx) > config.playerMaxSpeedError || Math.abs(lastPos[1] - player.posy) > config.playerMaxSpeedError)
+    ) {
+      console.log("Player moved too fast");
+      player.posx = lastPos[0];
+      player.posy = lastPos[1];
+      let collision = detectCollision(player, "solids", false);
+      if (collision.bottom) {
+        player.posy = lastPos[1] + 4;
+      }
+      if (collision.top) {
+        player.posy = lastPos[1] - 4;
+      }
     }
-    objects.backgroundImg.totalTimePassed -= (scrollOffsetAdjustment.x / 300).round(.001);
-    animateRunner(secondsPassed);
-    frameUpdate();
-    await null;
-  };
-
-  const playerUpdateLoop = async () => {
-    playerUpdate(secondsPassed);
-    await null;
-  };
-
-  frameUpdateLoop();
-  playerUpdateLoop();
-
-  // console.log(secondsPassed);
-  // window.requestAnimationFrame((timeStamp) => { update(timeStamp) });
+    playerMovementCheck = true;
+  } catch (TypeError) {
+    // throw TypeError
+  }
+  return;
 }
+
+const draw = () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  totalFrames++;
+  for (let i = 0; i < objects.traps.length; i++) {
+    objects.traps[i].totalTimePassed += 1 / config.fps;
+  }
+  objects.backgroundImg.totalTimePassed += 1 / config.fps;
+  animateRunner();
+  for (let i = 0; i < objects.frozen.length; i++) {
+    objects.frozen[i].draw();
+  }
+  for (let i = 0; i < objects.nonFrozen.length; i++) {
+    if (objects.nonFrozen[i].mainType == "player") { continue; }
+    objects.nonFrozen[i].move();
+    objects.nonFrozen[i].draw();
+  }
+  scoreUpdate(-1);
+  if (objects.player) {
+    objects.player.draw();
+  }
+}
+
+const end = () => {
+  // ctx.clearRecdt(0, 0, canvas.width, canvas.height);
+}
+
+// async function dfs(timeStamp) {
+//   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+//   secondsPassed = (timeStamp - oldTimeStamp) / 1000;
+//   oldTimeStamp = timeStamp;
+//   totalTimePassed.total += secondsPassed;
+
+//   const frameUpdateLoop = async () => {
+//     for (let i = 0; i < objects.traps.length; i++) {
+//       objects.traps[i].totalTimePassed += secondsPassed;
+//     }
+//     objects.backgroundImg.totalTimePassed -= (scrollOffsetAdjustment.x / 300).round(.001);
+//     animateRunner(secondsPassed);
+//     frameUpdate();
+//     await null;
+//   };
+
+//   const playerUpdateLoop = async () => {
+//     playerUpdate(secondsPassed);
+//     await null;
+//   };
+
+//   frameUpdateLoop();
+//   playerUpdateLoop();
+
+//   // console.log(secondsPassed);
+//   // window.requestAnimationFrame((timeStamp) => { update(timeStamp) });
+// }
 
 window.startUp = () => {
   loadMap();
-  // window.requestAnimationFrame((timeStamp) => { update(timeStamp) });
-
-  setInterval(() => {
-    window.requestAnimationFrame((timeStamp) => { update(timeStamp) });
-  }, 1000 / config.frameRate);
+  MainLoop.setUpdate(update).setDraw(draw).setEnd(end);
+  MainLoop.setMaxAllowedFPS(config.fps);
+  setTimeout(() => {
+    console.log("Starting main loop");
+    MainLoop.start();
+  }, 1000);
 };
