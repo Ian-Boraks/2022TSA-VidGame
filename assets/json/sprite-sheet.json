@@ -69,7 +69,7 @@
     "idle": {
       "frames": 10980,
       "sx": 5490,
-      "sy": 0,
+      "sy": 100,
       "sWidth": 1745,
       "sHeight": 760
     }

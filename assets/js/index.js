@@ -400,7 +400,7 @@ class entity {
           finalizeGroundEntities(this);
         }
         if (this.mainType == 'backgroundImg') {
-          this.totalTimePassed = { x: 0, y: 0 };
+          this.totalTimePassed = { x: 0, y: 100 };
         } else { this.totalTimePassed = 0; }
         this.draw = () => { this.drawImg(this); };
         break;
@@ -1387,6 +1387,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
               tempScroll.y -= moveValues.totMovY > 0 ? moveValues.totMovY : 0;
               if (!entity.touchedLadder) {
                 entity.posy = entity.posy + tempScroll.y;
+                tempScroll.y += 1
               }
               continue;
             }
@@ -1499,8 +1500,8 @@ function makeDefaultEntities(justBorders = false) {
   const defaultEntities = [
     !justBorders ?
       {
-        "width": canvas.width, "height": canvas.height + 100,
-        "initPosx": 0, "initPosy": -100,
+        "width": canvas.width, "height": canvas.height + 110,
+        "initPosx": 0, "initPosy": -110,
         "styles": ["img", 'backgroundImg', 'idle'],
         "types": ["backgroundImg", "background", "frozen"]
       } : null,
