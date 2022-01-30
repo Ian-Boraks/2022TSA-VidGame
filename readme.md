@@ -12,7 +12,6 @@
 
 <h4 align="center"> 
 	2022TSA VidGame 🚀 Museum Runner <br><br>
-	<input style="font-size: Large;" type="button" onclick="location.href='/';" value="CLICK ME to Continue to Museum Runner" />
 </h4> 
 
 # CONTROLS #
@@ -106,5 +105,3 @@ This string is used in the `assets/json/map.json` file to store the map data. (_
 # DEBUG #
 Hit the `shift` key to enter debug mode, press it again to disable.
 
-# #
-<input style="font-size: Large;" type="button" onclick="location.href='/';" value="CLICK ME to Continue to Museum Runner" />
