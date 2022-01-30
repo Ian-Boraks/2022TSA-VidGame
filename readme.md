@@ -11,7 +11,8 @@
 <!-- Status -->
 
 <h4 align="center"> 
-	🚧  2022TSA VidGame 🚀 Under construction...  🚧
+	2022TSA VidGame 🚀 Museum Runner <br><br>
+	<input style="font-size: Large;" type="button" onclick="location.href='/';" value="CLICK ME to Continue to Museum Runner" />
 </h4> 
 
 # CONTROLS #
@@ -22,6 +23,30 @@ A, S, D, SPACE
 `D`: Moves the player to the `right`<br>
 `S`: Makes the player `crouch` (_reduces hitbox by 1/2_)<br>
 `SPACE`: Makes the player `jump`<br>
+
+## HOW TO WALL JUMP ##
+To wall jump, the player must jump towards a wall and while touching it they press the opposite directional key while holding space.
+
+### Example 1 (Basic Wall Jump):
+Hold `SPACE` and `A` <br>
+![image](https://user-images.githubusercontent.com/31255827/151717869-298d6454-e4cf-49f8-8106-f213ff22000b.png)
+
+At apex of jump, continue holding `SPACE`, release `A` and press `D`<br>
+![image](https://user-images.githubusercontent.com/31255827/151717889-e9856e28-d8c9-4890-8e4e-6cf4d0d4209a.png)
+
+### Example 2 (Chained Wall Jump)
+Hold `SPACE` and `D` <br>
+![image](https://user-images.githubusercontent.com/31255827/151718074-c5106ed1-1eed-4659-b552-987fe20f736e.png)
+
+At apex of jump, continue holding `SPACE`, release `D` and press `A`<br>
+![image](https://user-images.githubusercontent.com/31255827/151718080-c2f66892-95b4-4b91-b944-fad86acf7f28.png)
+
+Once colliding with the next wall, continue holding `SPACE`, release `A` and press `D`<br>
+![image](https://user-images.githubusercontent.com/31255827/151718082-69e1467b-7f08-4b8b-a2b2-95f62e6bcc94.png)
+
+Repeat to climb up the wall<br>
+![image](https://user-images.githubusercontent.com/31255827/151718091-1bd8c746-69a6-437d-95f7-a15d1426b85b.png)
+
 
 # EDITOR #
 To use the editor, hit the `enter` key while focused on the game window. (_To exit the editor, hit the `enter` key a second time_)
@@ -81,3 +106,5 @@ This string is used in the `assets/json/map.json` file to store the map data. (_
 # DEBUG #
 Hit the `shift` key to enter debug mode, press it again to disable.
 
+# #
+<input style="font-size: Large;" type="button" onclick="location.href='/';" value="CLICK ME to Continue to Museum Runner" />
