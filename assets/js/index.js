@@ -24,6 +24,8 @@ let endBox = { x: 0, y: 0 };
 let boxHolder = [];
 let typeOfEntity = 'solid';
 
+let delta;
+
 let map = {};
 let spriteSheets = {};
 
@@ -103,6 +105,10 @@ let totalFrames = 0;
 
 // * ON LOAD --------------------------------------------------------
 // alert("To use the editor, press enter.\nEditor controls:\nClick+Drag to make solid\nShift+Click+Drag to make ladder\nPress enter again to exit and to have map changes output to console\n\n\nGame Controls:\nSpace to jump\nA to move left\nD to move right\nS to crouch");
+if (window.location.href.indexOf('#') > -1) {
+} else {
+  window.location.href = "/readme.html";
+}
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -417,7 +423,7 @@ class entity {
       this.move = () => { this.movePlayer(this); };
       return;
     } else {
-      if (types.indexOf('backgroundImg') > -1) { this.animationSpeed = getRandom(20, 35); objects.backgroundImg = this; }
+      if (types.indexOf('backgroundImg') > -1) { this.animationSpeed = 1000; objects.backgroundImg = this; }
       if (types.indexOf('solid') > -1) { objects.solids.push(this); }
       if (types.indexOf('ladder') > -1) { objects.ladders.push(this); }
       if (types.indexOf('frozen') > -1) { objects.frozen.push(this); } else { objects.nonFrozen.push(this); }
@@ -425,7 +431,7 @@ class entity {
       if (types.indexOf('border') > -1) { objects.borders.push(this); }
       if (types.indexOf('token') > -1) { objects.tokens.push(this); }
       if (types.indexOf('grid') > -1) { objects.grids.push(this); }
-      if (types.indexOf('trap') > -1) { this.animationSpeed = getRandom(20, 35); objects.traps.push(this); }
+      if (types.indexOf('trap') > -1) { this.animationSpeed = getRandom(1000, 1500); objects.traps.push(this); }
       if (types.indexOf('background') > -1) { objects.background.push(this); }
       this.move = () => { this.moveDefault(this); };
     }
@@ -452,11 +458,16 @@ class entity {
   }
 
   movePlayer = () => {
-
     if (this.moveValues.x == 0 && this.moveValues.y == 0) { return; }
 
-    this.posx += this.moveValues.x;
-    this.posy += this.moveValues.y;
+    const tempPos = [this.posx, this.posy];
+
+    for (i = 0; i < 1.1; i += 0.1) {
+      // this.posx += this.moveValues.x;
+      // this.posy += this.moveValues.y;
+      this.posx = lerp(tempPos[0], tempPos[0] + this.moveValues.x, i);
+      this.posy = lerp(tempPos[1], tempPos[1] + this.moveValues.y, i);
+    }
   }
 
   moveDefault = () => {
@@ -839,7 +850,7 @@ function animate(entity, secondsPassed) {
     case 'trap':
       let height = spriteSheets[entity.imgLink][entity.animation]["sHeight"];
       entity.sx = lerp(0, frames, entity.totalTimePassed / entity.animationSpeed);
-      entity.sy = height - entity.height - (oscillator(totalFrames, .2, .5) * 5);
+      entity.sy = height - entity.height - (oscillator(totalFrames / 40, .2, .5) * 5);
       if (entity.totalTimePassed / entity.animationSpeed >= 1) {
         entity.sx = lerp(0, frames, 0);
         entity.totalTimePassed = 0;
@@ -887,6 +898,9 @@ function switchAnimation(entity, animationID, animationSpeed = config.defaultAni
 const playerMovementGravity = (delta) => {
   let player;
   let pMoveVal;
+  let slowMove = false;
+  let wallJump = false;
+  // wallJumpAllowed = true;
 
   try {
     player = objects.player;
@@ -928,7 +942,8 @@ const playerMovementGravity = (delta) => {
   for (i = 0; i < keysDown.length; i++) {
     switch (keysDown[i]) {
       case 'dKey':
-        pMoveVal.x += pMoveVal.speed * delta;
+        if (!player.touchedGround && playerDirection == "left") { slowMove = true; }
+        pMoveVal.x += pMoveVal.speed * delta * (slowMove ? 0 : 1);
         if (Math.abs(pMoveVal.x) >= config.playerMaxSpeed) { pMoveVal.x = pCurMovVal.x; }
         if (player.touchedGround) { switchAnimation(player, 'walkR', 2); }
         playerDirection = "right";
@@ -937,7 +952,8 @@ const playerMovementGravity = (delta) => {
         player.crouched = true;
         break;
       case 'aKey':
-        pMoveVal.x += -pMoveVal.speed * delta;
+        if (!player.touchedGround && playerDirection == "right") { slowMove = true; }
+        pMoveVal.x += -pMoveVal.speed * delta * (slowMove ? 0 : 1);
         if (Math.abs(pMoveVal.x) >= config.playerMaxSpeed) { pMoveVal.x = pCurMovVal.x; }
         if (player.touchedGround) { switchAnimation(player, 'walkL', 2); }
         playerDirection = "left";
@@ -947,12 +963,15 @@ const playerMovementGravity = (delta) => {
           player.touchedGround = false;
           playSound('jump');
           pMoveVal.y += config.jumpHeight * delta;
+
           if (!wallJump) {
             wallJumpTimer = setTimeout(() => {
-              // setTimeout(() => { wallJumpAllowed = false; }, 200);
+              // console.log("walljump timer");
+              // setTimeout(() => { MainLoop.stop(); }, 800);
               wallJumpAllowed = true;
               wallJumpTimer = null;
-            }, 400);
+              
+            }, 200);
           }
         }
       default:
@@ -962,9 +981,9 @@ const playerMovementGravity = (delta) => {
 
   const friction = () => {
     if (pMoveVal.x > 1) {
-      pMoveVal.x -= config.playerFriction * delta * ((!player.touchedGround) ? .25 : 1);
+      pMoveVal.x -= config.playerFriction * delta;
     } else if (pMoveVal.x < -1) {
-      pMoveVal.x += config.playerFriction * delta * ((!player.touchedGround) ? .25 : 1);
+      pMoveVal.x += config.playerFriction * delta;
     }
     else {
       pMoveVal.x = 0;
@@ -978,51 +997,49 @@ const playerMovementGravity = (delta) => {
   }
 
   void detectCollision(player, "stairs");
-  let collisionSolids = detectCollision(player);
+  let collisionSolids = detectCollision(player, "solids");
   let collisionLadders = detectCollision(player, "ladders");
   void detectCollision(player, "tokens", false);
   void detectCollision(player, "traps", false);
   void detectOutOfBounds(player);
 
-  // if (
-  //   keys.spaceKey[0] &&
-  //   !player.touchedGround &&
-  //   !collisionSolids.borderLeft &&
-  //   !collisionSolids.borderRight &&
-  //   !collisionLadders.ladder &&
-  //   wallJumpAllowed
-  // ) {
-  //   player.touchedGround = false;
-  //   if (collisionSolids.left && keys.dKey[0]) {
-  //     player.touchedGround = true;
-  //     moveValues.x = 1;
-  //     // keys.dKey[0] = false;
-  //     wallJump = true;
-  //     playerDirection = "right";
-  //     wallJumpAllowed = true;
-  //     // playSound('wallJump');
-  //     scoreUpdate(100);
-  //   } else if (collisionSolids.right && keys.aKey[0]) {
-  //     player.touchedGround = true;
-  //     moveValues.x = -1;
-  //     // keys.aKey[0] = false;
-  //     wallJump = true;
-  //     playerDirection = "left";
-  //     wallJumpAllowed = true;
-  //     // playSound('wallJump');
-  //     scoreUpdate(100);
-  //   }
-  // }
-  // if (keys.aKey[1] && !wallJump && player.touchedGround) {
-  //   keys.aKey[0] = true;
-  //   wallJumpAllowed = false;
-  //   if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
-  // }
-  // if (keys.dKey[1] && !wallJump && player.touchedGround) {
-  //   keys.dKey[0] = true;
-  //   wallJumpAllowed = false;
-  //   if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
-  // }
+  if (
+    keys.spaceKey[0] &&
+    !player.touchedGround &&
+    !collisionSolids.borderLeft &&
+    !collisionSolids.borderRight &&
+    !collisionLadders.ladder &&
+    wallJumpAllowed
+  ) {
+    player.touchedGround = false;
+    // collisionSolids = detectCollision(player, "solids");
+    // console.log("walls", collisionSolids.left, collisionSolids.right);
+    // console.log(collisionSolids.wallJumpLeft, collisionSolids.wallJumpRight);
+    // console.log("Keys", (keys.dKey[0] ), (keys.aKey[0] ));
+    if (collisionSolids.wallJumpLeft && keys.dKey[0]) {
+      // console.log("wall jump 1");
+      pMoveVal.y = 0;
+      player.touchedGround = true;
+      pMoveVal.x += pMoveVal.speed * delta;
+      // keys.dKey[0] = false;
+      wallJump = true;
+      playerDirection = "right";
+      wallJumpAllowed = true;
+      // playSound('wallJump');
+      scoreUpdate(100);
+    } else if (collisionSolids.wallJumpRight && keys.aKey[0]) {
+      // console.log("wall jump 2");
+      pMoveVal.y = 0;
+      player.touchedGround = true;
+      pMoveVal.x -= pMoveVal.speed * delta;
+      // keys.aKey[0] = false;
+      wallJump = true;
+      playerDirection = "left";
+      wallJumpAllowed = true;
+      // playSound('wallJump');
+      scoreUpdate(100);
+    }
+  }
 
   player.height = player.crouched ? player.initHeight / 2 : player.initHeight;
 
@@ -1030,6 +1047,19 @@ const playerMovementGravity = (delta) => {
   friction();
 
   player.move();
+
+  if (keys.aKey[1] && !wallJump && player.touchedGround) {
+    // console.log("wall jump 1");
+    keys.aKey[0] = true;
+    wallJumpAllowed = false;
+    if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
+  }
+  if (keys.dKey[1] && !wallJump && player.touchedGround) {
+    // console.log("wall jump 2");
+    keys.dKey[0] = true;
+    wallJumpAllowed = false;
+    if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
+  }
 }
 
 const detectOutOfBounds = function (entity) {
@@ -1075,6 +1105,9 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
     stairRight: false,
     stairMove: false,
     stairScroll: false,
+
+    wallJumpRight: false,
+    wallJumpLeft: false,
 
     top: false,
     bottom: false,
@@ -1253,7 +1286,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
           entity.posy + splitHitBoxOffset < solid.posy + solid.height
         ) {
-          if (solid.mainType == 'stopWall') { collision.stopWall = true; }
+
           if (solid.mainType == 'borderWallLeft') { collision.borderLeft = true; continue; }
           // if (moveEntity && !collisionStairs.stairMove) {
           entity.moveValues.x = 0;
@@ -1268,7 +1301,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
           entity.posy + splitHitBoxOffset < solid.posy + solid.height
         ) {
-          if (solid.mainType == 'stopWall') { collision.stopWall = true; }
+
           if (solid.mainType == 'borderWallRight') { collision.borderRight = true; continue; }
           // if (moveEntity && !collisionStairs.stairMove) {
           entity.moveValues.x = 0;
@@ -1285,7 +1318,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           moveValues.newy <= solid.posy + solid.height
         ) {
           entity.posy = solid.posy + solid.height;
-          if (solid.mainType == 'stopWall') { collision.stopWall = true; }
+
           if (solid.mainType == 'borderWallBottom') { collision.borderBottom = true; continue; }
           else if (entity == objects.player) {
             if (moveEntity) {
@@ -1332,6 +1365,30 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           // }
         }
 
+        if (!entity.touchedGround) {
+          if (
+            moveValues.newx + entity.width / 2 > solid.posx &&
+            moveValues.newx - (splitHitBoxOffset * 2) < solid.posx + solid.width &&
+            entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
+            entity.posy + splitHitBoxOffset < solid.posy + solid.height
+          ) {
+
+            if (solid.mainType == 'borderWallLeft') { continue; }
+            collision.wallJumpLeft = true;
+          }
+
+          if (
+            moveValues.newx + entity.width + (splitHitBoxOffset * 2) > solid.posx &&
+            moveValues.newx + entity.width / 2 < solid.posx + solid.width &&
+            entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
+            entity.posy + splitHitBoxOffset < solid.posy + solid.height
+          ) {
+
+            if (solid.mainType == 'borderWallRight') { continue; }
+            collision.wallJumpRight = true;
+          }
+        }
+
 
         if (
           entity.posx + entity.width - splitHitBoxOffset > solid.posx &&
@@ -1340,7 +1397,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           moveValues.newy + (entity.height / 2) <= solid.posy + solid.height
         ) {
 
-          if (solid.mainType == 'stopWall') { collision.stopWall = true; }
+
           if (solid.mainType == 'borderWallTop') {
             entity.moveValues.y = entity.moveValues.y;
             collision.borderTop = true;
@@ -1362,16 +1419,23 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         if (collision.borderLeft || collision.borderRight) {
           scrollOffsetAdjustment.x += (moveValues.totMovX * -1) + tempScroll.x;
           entity.moveValues.x = 0;
+          entity.posx = lastPos[0];
         }
         if (collision.borderTop || collision.borderBottom) {
           scrollOffsetAdjustment.y += (moveValues.totMovY * -1) + tempScroll.y;
           if (collision.borderTop) {
-            scrollOffsetAdjustment.y = (moveValues.newy + entity.height) - solid.posy;
+            // scrollOffsetAdjustment.y += entity.height;
+            // scrollOffsetAdjustment.y = (moveValues.newy + entity.height) - solid.posy;
           }
           // entity.moveValues.y = 0;
         }
         scrollOffsetTotal.x += scrollOffsetAdjustment.x;
         scrollOffsetTotal.y += scrollOffsetAdjustment.y;
+
+        if (scrollOffsetAdjustment.x + scrollOffsetAdjustment.y != 0) {
+          objects.backgroundImg.totalTimePassed -= scrollOffsetAdjustment.x;
+          objects.backgroundImg.draw();
+        }
       }
 
       collision.border = collision.borderLeft || collision.borderRight || collision.borderTop || collision.borderBottom;
@@ -1457,7 +1521,7 @@ function makeDefaultEntities(justBorders = false) {
   loadMap(null, false, defaultEntities);
 }
 
-function loadMap(mapID = "stage2", clearMap = true, mapArray = null) {
+function loadMap(mapID = "init", clearMap = true, mapArray = null) {
   void ctx.fillRect(0, 0, canvas.width, canvas.height, 'black');
   if (clearMap) {
     scrollOffsetTotal = { x: 0, y: 0 };
@@ -1502,7 +1566,8 @@ function playSound(sound) {
   soundManager.play(sound);
 }
 
-const update = (delta) => {
+const update = (deltaUpdate) => {
+  delta = deltaUpdate;
   let player = objects.player;
 
   if (!player) { return; }
@@ -1537,9 +1602,8 @@ const draw = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   totalFrames++;
   for (let i = 0; i < objects.traps.length; i++) {
-    objects.traps[i].totalTimePassed += 1 / config.fps;
+    objects.traps[i].totalTimePassed += 1;
   }
-  objects.backgroundImg.totalTimePassed += 1 / config.fps;
   animateRunner();
   for (let i = 0; i < objects.frozen.length; i++) {
     objects.frozen[i].draw();
@@ -1590,6 +1654,7 @@ const end = () => {
 
 window.startUp = () => {
   loadMap();
+  scoreUpdate(10000);
   MainLoop.setUpdate(update).setDraw(draw).setEnd(end);
   MainLoop.setMaxAllowedFPS(config.fps);
   setTimeout(() => {
