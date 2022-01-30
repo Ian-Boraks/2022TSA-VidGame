@@ -25,6 +25,7 @@ let boxHolder = [];
 let typeOfEntity = 'solid';
 
 let delta;
+let wallJumpFriction;
 
 let map = {};
 let spriteSheets = {};
@@ -981,9 +982,9 @@ const playerMovementGravity = (delta) => {
 
   const friction = () => {
     if (pMoveVal.x > 1) {
-      pMoveVal.x -= config.playerFriction * delta;
+      pMoveVal.x -= config.playerFriction * delta * (wallJumpFriction ? .5 : 1);
     } else if (pMoveVal.x < -1) {
-      pMoveVal.x += config.playerFriction * delta;
+      pMoveVal.x += config.playerFriction * delta * (wallJumpFriction ? .5 : 1);
     }
     else {
       pMoveVal.x = 0;
@@ -1019,23 +1020,27 @@ const playerMovementGravity = (delta) => {
     if (collisionSolids.wallJumpLeft && keys.dKey[0]) {
       // console.log("wall jump 1");
       pMoveVal.y = 0;
+      pMoveVal.x = 0;
       player.touchedGround = true;
-      pMoveVal.x += pMoveVal.speed * delta;
+      pMoveVal.x += (pMoveVal.speed * 1.1) * delta;
       // keys.dKey[0] = false;
       wallJump = true;
       playerDirection = "right";
       wallJumpAllowed = true;
+      wallJumpFriction = true;
       // playSound('wallJump');
       scoreUpdate(100);
     } else if (collisionSolids.wallJumpRight && keys.aKey[0]) {
       // console.log("wall jump 2");
       pMoveVal.y = 0;
+      pMoveVal.x = 0;
       player.touchedGround = true;
-      pMoveVal.x -= pMoveVal.speed * delta;
+      pMoveVal.x += -(pMoveVal.speed * 1.1) * delta;
       // keys.aKey[0] = false;
       wallJump = true;
       playerDirection = "left";
       wallJumpAllowed = true;
+      wallJumpFriction = true;
       // playSound('wallJump');
       scoreUpdate(100);
     }
@@ -1052,12 +1057,14 @@ const playerMovementGravity = (delta) => {
     // console.log("wall jump 1");
     keys.aKey[0] = true;
     wallJumpAllowed = false;
+    wallJumpFriction = false;
     if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
   }
   if (keys.dKey[1] && !wallJump && player.touchedGround) {
     // console.log("wall jump 2");
     keys.dKey[0] = true;
     wallJumpAllowed = false;
+    wallJumpFriction = false;
     if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
   }
 }
@@ -1368,7 +1375,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         if (!entity.touchedGround) {
           if (
             moveValues.newx + entity.width / 2 > solid.posx &&
-            moveValues.newx - (splitHitBoxOffset * 2) < solid.posx + solid.width &&
+            moveValues.newx - (splitHitBoxOffset * 4) < solid.posx + solid.width &&
             entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
             entity.posy + splitHitBoxOffset < solid.posy + solid.height
           ) {
@@ -1378,7 +1385,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           }
 
           if (
-            moveValues.newx + entity.width + (splitHitBoxOffset * 2) > solid.posx &&
+            moveValues.newx + entity.width + (splitHitBoxOffset * 4) > solid.posx &&
             moveValues.newx + entity.width / 2 < solid.posx + solid.width &&
             entity.posy + entity.height - splitHitBoxOffset > solid.posy &&
             entity.posy + splitHitBoxOffset < solid.posy + solid.height
