@@ -23,6 +23,25 @@ A, S, D, SPACE
 `S`: Makes the player `crouch` (_reduces hitbox by 1/2_)<br>
 `SPACE`: Makes the player `jump`<br>
 
+# DIFFERENT OBJECTS #
+Lava: If touched, it will force you to respawn and you will loose some time/score<br>
+![image](https://user-images.githubusercontent.com/31255827/151719798-dd195b24-5c72-4337-ade1-b1c5bb7c019c.png)
+
+Ladder: If touched, the player will accelerate upwards<br>
+![image](https://user-images.githubusercontent.com/31255827/151719825-b609caaf-21d3-44cc-93d5-b3c637674d6a.png)
+
+Background: This object has no collision on it and can be walked through <br>
+![image](https://user-images.githubusercontent.com/31255827/151719844-6ff740da-9a27-480d-a081-0dd2e6461de2.png)
+
+Tokens: If touched, they will disapear and the player will gain time/score<br>
+![image](https://user-images.githubusercontent.com/31255827/151719858-1042432c-e43a-4cc3-8a4a-f6cb1f5dfd94.png)
+
+Stair: The user will automatically walk up them<br>
+![image](https://user-images.githubusercontent.com/31255827/151719963-a38158a4-3a27-426c-bd7e-0d1d00d811f9.png)
+
+Ground: Is a solid object with collision<br>
+![image](https://user-images.githubusercontent.com/31255827/151719916-9396a38a-a306-4479-b833-69a71e0e0abf.png)
+
 ## HOW TO WALL JUMP ##
 To wall jump, the player must jump towards a wall and while touching it they press the opposite directional key while holding space.
 
