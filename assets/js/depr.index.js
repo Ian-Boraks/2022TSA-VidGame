@@ -52,6 +52,134 @@ function playerMovementNoGravity(player) {
 
 }
 
+function playerMovementGravity(player, secondsPassed) {
+  // return;
+  let moveValues = player.moveValues;
+  moveValues.amount = moveValues.speed;
+  let wallJump = false;
+
+  if (moveValues.y > -2) {
+    moveValues.y -= config.gravity;
+  }
+
+  if (moveValues.x > .1) {
+    moveValues.x -= player.touchedGround ? .15 : .01;
+  } else if (moveValues.x < -.1) {
+    moveValues.x += player.touchedGround ? .15 : .01;
+  } else {
+    moveValues.x = 0;
+  }
+
+  keysDown = keys.getKeysByValue(true);
+  keysDown = keysDown.concat(keys.getKeysByValue([true, true]));
+
+  if (!keys.aKey[1] && !keys.dKey[1] && player.touchedGround) {
+    switch (playerDirection) {
+      case "right":
+        switchAnimation(player, "idleR");
+        break;
+      case "left":
+        switchAnimation(player, "idleL");
+        break;
+    }
+  } else if (!player.touchedGround) {
+    switch (playerDirection) {
+      case "right":
+        switchAnimation(player, "jumpR");
+        break;
+      case "left":
+        switchAnimation(player, "jumpL");
+        break;
+    }
+  }
+
+  if (!keys.sKey[0]) { player.crouched = false; }
+
+  for (let i = 0; i < keysDown.length; i++) {
+    switch (keysDown[i]) {
+      case 'dKey':
+        // if (wallJump[0] == "left") { return; }
+        moveValues.x += Math.abs(moveValues.x) > (config.playerMaxSpeed) ? 0 : .25;
+        if (player.touchedGround) { switchAnimation(player, 'walkR', 2); }
+        playerDirection = 'right';
+        break;
+      case 'sKey':
+        player.crouched = true;
+        break;
+      case 'aKey':
+        // if (wallJump[0] == "right") { return; }
+        moveValues.x -= Math.abs(moveValues.x) > (config.playerMaxSpeed) ? 0 : .25;
+        if (player.touchedGround) { switchAnimation(player, 'walkL', 2); }
+        playerDirection = 'left';
+        break;
+      case 'spaceKey':
+        if (player.touchedGround) {
+          player.touchedGround = false;
+          playSound('jump');
+          moveValues.y = config.jumpHeight;
+          if (!wallJump) {
+            wallJumpTimer = setTimeout(() => {
+              // setTimeout(() => { wallJumpAllowed = false; }, 200);
+              wallJumpAllowed = true;
+              wallJumpTimer = null;
+            }, 400);
+          }
+        }
+      default:
+        break;
+    }
+  }
+
+  void detectCollision(player, "stairs");
+  let collisionSolids = detectCollision(player);
+  let collisionLadders = detectCollision(player, "ladders");
+  void detectCollision(player, "tokens", false);
+  void detectCollision(player, "traps", false);
+  void detectOutOfBounds(player);
+
+  if (
+    keys.spaceKey[0] &&
+    !player.touchedGround &&
+    !collisionSolids.borderLeft &&
+    !collisionSolids.borderRight &&
+    !collisionLadders.ladder &&
+    wallJumpAllowed
+  ) {
+    player.touchedGround = false;
+    if (collisionSolids.left && keys.dKey[0]) {
+      player.touchedGround = true;
+      moveValues.x = 1;
+      // keys.dKey[0] = false;
+      wallJump = true;
+      playerDirection = "right";
+      wallJumpAllowed = true;
+      // playSound('wallJump');
+      scoreUpdate(100);
+    } else if (collisionSolids.right && keys.aKey[0]) {
+      player.touchedGround = true;
+      moveValues.x = -1;
+      // keys.aKey[0] = false;
+      wallJump = true;
+      playerDirection = "left";
+      wallJumpAllowed = true;
+      // playSound('wallJump');
+      scoreUpdate(100);
+    }
+  }
+  if (keys.aKey[1] && !wallJump && player.touchedGround) {
+    keys.aKey[0] = true;
+    wallJumpAllowed = false;
+    if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
+  }
+  if (keys.dKey[1] && !wallJump && player.touchedGround) {
+    keys.dKey[0] = true;
+    wallJumpAllowed = false;
+    if (wallJumpTimer) { clearTimeout(wallJumpTimer); }
+  }
+  player.height = player.crouched ? player.initHeight / 2 : player.initHeight;
+}
+
+
 makeBox = function () {
   console.log('makeBox');
 
