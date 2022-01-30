@@ -26,6 +26,7 @@ let typeOfEntity = 'solid';
 
 let delta;
 let wallJumpFriction;
+let infiniteJumps = false;
 
 let map = {};
 let spriteSheets = {};
@@ -380,7 +381,6 @@ class entity {
     this.posx = initPosx;
     this.posy = initPosy;
     this.types = types;
-    this.totalTimePassed = 0;
     this.mainType = types[0];
     this.moveValues = { x: 0, y: 0, amount: 0, speed: config.playerDefaultSpeed };
 
@@ -399,6 +399,9 @@ class entity {
         if (this.mainType != 'player') {
           finalizeGroundEntities(this);
         }
+        if (this.mainType == 'backgroundImg') {
+          this.totalTimePassed = { x: 0, y: 0 };
+        } else { this.totalTimePassed = 0; }
         this.draw = () => { this.drawImg(this); };
         break;
       case 'draw':
@@ -424,7 +427,7 @@ class entity {
       this.move = () => { this.movePlayer(this); };
       return;
     } else {
-      if (types.indexOf('backgroundImg') > -1) { this.animationSpeed = 1000; objects.backgroundImg = this; }
+      if (types.indexOf('backgroundImg') > -1) { this.animationSpeed = 2000; objects.backgroundImg = this; }
       if (types.indexOf('solid') > -1) { objects.solids.push(this); }
       if (types.indexOf('ladder') > -1) { objects.ladders.push(this); }
       if (types.indexOf('frozen') > -1) { objects.frozen.push(this); } else { objects.nonFrozen.push(this); }
@@ -539,6 +542,8 @@ function onKeyDown(event) {
       keys.spaceKey[0] = true;
       break;
     case 16: //shift
+      if (!editorMode) { break; }
+      infiniteJumps = !infiniteJumps;
       debugMode = !debugMode;
       window.dispatchEvent(new Event('resize'));
       keys.shiftKey[0] = true;
@@ -833,7 +838,6 @@ function finalizeGroundEntities(entity) {
 
     case 'backgroundImg':
       entity.sx = 0;
-      entity.sy = 0;
       entity.sWidth = imgWidth;
       entity.sHeight = imgHeight;
       break;
@@ -865,17 +869,43 @@ function animate(entity, secondsPassed) {
       break;
 
     case 'backgroundImg':
-      if (entity.totalTimePassed > 0) {
-        entity.sx = lerp(653, frames, entity.totalTimePassed / entity.animationSpeed);
-      } else if (entity.totalTimePassed < 0) {
-        entity.sx = lerp(653, 0, Math.abs(entity.totalTimePassed) / entity.animationSpeed);
+      const tempTotalTimePassed = entity.totalTimePassed;
+      if (entity.totalTimePassed.x > 0) {
+        const tempLerp = lerp(5490, frames, (entity.totalTimePassed.x / 10) / entity.animationSpeed);
+        const tempEntitySX = entity.sx
+        for (i = 0; i < 1.05; i += .05) {
+          entity.sx = lerp(tempEntitySX, tempLerp, i);
+        }
+      } else if (entity.totalTimePassed.x < 0) {
+        const tempLerp = lerp(5490, 0, Math.abs((entity.totalTimePassed.x / 10)) / entity.animationSpeed);
+        const tempEntitySX = entity.sx
+        for (i = 0; i < 1.05; i += .05) {
+          entity.sx = lerp(tempEntitySX, tempLerp, i);
+        }
       }
-      if (entity.totalTimePassed / entity.animationSpeed >= 1) {
-        entity.sx = lerp(653, frames, 0);
-        entity.totalTimePassed = 0;
-      } else if (entity.totalTimePassed / entity.animationSpeed <= -1) {
-        entity.sx = lerp(653, 0, 0);
-        entity.totalTimePassed = 0;
+      if (entity.totalTimePassed.y > 0) {
+        const tempLerp = lerp(-100, frames, (entity.totalTimePassed.y / 20) / entity.animationSpeed);
+        const tempEntitySY = entity.sy
+        for (i = 0; i < 1.05; i += .05) {
+          entity.sy = lerp(tempEntitySY, tempLerp, i);
+        }
+      } else if (entity.totalTimePassed.y < 0) {
+        const tempLerp = lerp(-100, 0, Math.abs((entity.totalTimePassed.y / 20)) / entity.animationSpeed);
+        const tempEntitySY = entity.sy
+        for (i = 0; i < 1.05; i += .05) {
+          entity.sy = lerp(tempEntitySY, tempLerp, i);
+        }
+      }
+      if (entity.totalTimePassed.x / entity.animationSpeed >= 1) {
+        entity.sx = lerp(5490, frames, 0);
+        entity.totalTimePassed.x = 0;
+      } else if (entity.totalTimePassed.x / entity.animationSpeed <= -1) {
+        entity.sx = lerp(5490, 0, 0);
+        entity.totalTimePassed.x = 0;
+      }
+      if (entity.sy >= 1587) {
+        entity.sy = 1587;
+        entity.totalTimePassed.y = tempTotalTimePassed.y;
       }
       break;
 
@@ -909,6 +939,8 @@ const playerMovementGravity = (delta) => {
   } catch (error) {
     throw new Error("Player not found");
   }
+
+  if (infiniteJumps) { player.touchedGround = true; }
 
   keysDown = keys.getKeysByValue(true);
   keysDown = keysDown.concat(keys.getKeysByValue([true, true]));
@@ -971,7 +1003,7 @@ const playerMovementGravity = (delta) => {
               // setTimeout(() => { MainLoop.stop(); }, 800);
               wallJumpAllowed = true;
               wallJumpTimer = null;
-              
+
             }, 200);
           }
         }
@@ -1153,6 +1185,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           if (moveEntity) {
             entity.touchedGround = false;
             if (entity.moveValues.y >= config.playerMaxSpeed) { continue; };
+            if (entity.moveValues.y < 0) { entity.moveValues.y = 0; }
             entity.moveValues.y += config.playerDefaultSpeed * delta / 6;
           }
         }
@@ -1171,8 +1204,8 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           (
             moveValues.newx + entity.width > trap.posx &&
             moveValues.newx < trap.posx + trap.width &&
-            entity.posy + entity.height > trap.posy &&
-            entity.posy < trap.posy + trap.height
+            moveValues.newy + entity.height > trap.posy &&
+            moveValues.newy < trap.posy + trap.height
           ) || (
             entity.posx + entity.width > trap.posx &&
             entity.posx < trap.currentPosx + trap.width &&
@@ -1326,7 +1359,11 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         ) {
           entity.posy = solid.posy + solid.height;
 
-          if (solid.mainType == 'borderWallBottom') { collision.borderBottom = true; continue; }
+          if (solid.mainType == 'borderWallBottom') {
+            collision.borderBottom = true;
+            entity.posy += entity.height / 8;
+            continue;
+          }
           else if (entity == objects.player) {
             if (moveEntity) {
               entity.touchedGround = true;
@@ -1430,8 +1467,8 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         }
         if (collision.borderTop || collision.borderBottom) {
           scrollOffsetAdjustment.y += (moveValues.totMovY * -1) + tempScroll.y;
-          if (collision.borderTop) {
-            // scrollOffsetAdjustment.y += entity.height;
+          if (collision.borderTop && entity.crouched) {
+            scrollOffsetAdjustment.y -= entity.height / 2;
             // scrollOffsetAdjustment.y = (moveValues.newy + entity.height) - solid.posy;
           }
           // entity.moveValues.y = 0;
@@ -1440,7 +1477,8 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         scrollOffsetTotal.y += scrollOffsetAdjustment.y;
 
         if (scrollOffsetAdjustment.x + scrollOffsetAdjustment.y != 0) {
-          objects.backgroundImg.totalTimePassed -= scrollOffsetAdjustment.x;
+          objects.backgroundImg.totalTimePassed.x -= scrollOffsetAdjustment.x;
+          objects.backgroundImg.totalTimePassed.y -= scrollOffsetAdjustment.y;
           objects.backgroundImg.draw();
         }
       }
@@ -1461,8 +1499,8 @@ function makeDefaultEntities(justBorders = false) {
   const defaultEntities = [
     !justBorders ?
       {
-        "width": canvas.width, "height": canvas.height,
-        "initPosx": 0, "initPosy": 0,
+        "width": canvas.width, "height": canvas.height + 100,
+        "initPosx": 0, "initPosy": -100,
         "styles": ["img", 'backgroundImg', 'idle'],
         "types": ["backgroundImg", "background", "frozen"]
       } : null,
@@ -1526,9 +1564,10 @@ function makeDefaultEntities(justBorders = false) {
   }
 
   loadMap(null, false, defaultEntities);
+  objects.backgroundImg.draw();
 }
 
-function loadMap(mapID = "init", clearMap = true, mapArray = null) {
+function loadMap(mapID = "stage1", clearMap = true, mapArray = null) {
   void ctx.fillRect(0, 0, canvas.width, canvas.height, 'black');
   if (clearMap) {
     scrollOffsetTotal = { x: 0, y: 0 };
@@ -1612,11 +1651,15 @@ const draw = () => {
     objects.traps[i].totalTimePassed += 1;
   }
   animateRunner();
+
+  objects.backgroundImg.draw();
+
   for (let i = 0; i < objects.frozen.length; i++) {
     objects.frozen[i].draw();
   }
+
   for (let i = 0; i < objects.nonFrozen.length; i++) {
-    if (objects.nonFrozen[i].mainType == "player") { continue; }
+    if (objects.nonFrozen[i].mainType == "player" || objects.nonFrozen[i].mainType == "backgroundImg") { continue; }
     objects.nonFrozen[i].move();
     objects.nonFrozen[i].draw();
   }

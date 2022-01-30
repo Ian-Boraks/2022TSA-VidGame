@@ -65,13 +65,13 @@
     }
   },
   "backgroundImg": {
-    "img": "/assets/img/background.png",
+    "img": "/assets/img/background1.jpg",
     "idle": {
-      "frames": 1306,
-      "sx": 653,
+      "frames": 10980,
+      "sx": 5490,
       "sy": 0,
-      "sWidth": 653,
-      "sHeight": 170
+      "sWidth": 1745,
+      "sHeight": 760
     }
   }
 }

@@ -103,5 +103,5 @@ This string is used in the `assets/json/map.json` file to store the map data. (_
 ```
 
 # DEBUG #
-Hit the `shift` key to enter debug mode, press it again to disable.
+Hit the `shift` key to enter debug mode, press it again to disable. (_ONLY WORKS IN EDITOR MODE_)
 
