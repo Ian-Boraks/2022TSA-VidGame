@@ -1,6 +1,6 @@
 :root {
 	--background-color-light: whitesmoke;
-	--background-color-dark: rgb(43, 43, 43);
+	--background-color-dark: black;
 	--text-color-light: var(--background-color-light);
 	--text-color-dark: var(--background-color-dark);
 

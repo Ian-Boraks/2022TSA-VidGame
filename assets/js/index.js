@@ -27,6 +27,7 @@ let typeOfEntity = 'solid';
 let delta;
 let wallJumpFriction;
 let infiniteJumps = false;
+let stageID = 'stage1';
 
 let map = {};
 let spriteSheets = {};
@@ -113,6 +114,7 @@ if (window.location.href.indexOf('#') > -1) {
 }
 
 const canvas = document.getElementById("game-canvas");
+const tempCanvasDisplay = canvas.style.display;
 const ctx = canvas.getContext("2d");
 
 window.addEventListener('resize', () => {
@@ -213,6 +215,15 @@ soundManager.onready(function () {
     volume: 100,
   });
 });
+
+var video = document.getElementById('intro');
+var startText = document.getElementById('startText');
+video.onended = function (e) {
+  canvas.style.display = tempCanvasDisplay;
+  video.style.display = "none";
+  MainLoop.start();
+  console.log("Main Loop Started");
+};
 
 // * UTILITY FUNCTIONS ------------------------------------------------
 const noop = () => { /* No operation function */ };
@@ -515,6 +526,8 @@ function onKeyDown(event) {
         if (startSong == 0) { playSound('backgroundMusic'); }
         else if (startSong == 1) { playSound('backgroundMusic1'); }
         else if (startSong == 2) { playSound('backgroundMusic2'); }
+        video.paused ? video.play() : video.pause();
+        startText.style.display = 'none';
         backgroundMusicPlaying = true;
       }
       break;
@@ -1242,10 +1255,17 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
             moveValues.newy <= token.posy + token.height
           )
         ) {
-          switch (entity.mainType) {
-            case 'nextStageToken':
+          switch (token.mainType) {
+            case 'nextStage':
               // TODO: Add next stage token
               console.log("next stage")
+              if (stageID == "stage1") {
+                loadMap("stage2");
+              } else if (stageID == "stage2") {
+                loadMap("stage3");
+              } else if (stageID == "stage3") {
+                loadMap("stage4");
+              }
               break;
 
             default:
@@ -1462,12 +1482,12 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         const moveValues = returnMoveValues(entity);
         scrollOffsetAdjustment.x = scrollOffsetAdjustment.y = 0;
         if (collision.borderLeft || collision.borderRight) {
-          scrollOffsetAdjustment.x += (moveValues.totMovX * -1.1) + tempScroll.x;
+          scrollOffsetAdjustment.x += (moveValues.totMovX * -1.3) + tempScroll.x;
           entity.moveValues.x = 0;
           entity.posx = lastPos[0];
         }
         if (collision.borderTop || collision.borderBottom) {
-          scrollOffsetAdjustment.y += (moveValues.totMovY * -1.1) + tempScroll.y;
+          scrollOffsetAdjustment.y += (moveValues.totMovY * -1.3) + tempScroll.y;
           if (collision.borderTop && entity.crouched) {
             scrollOffsetAdjustment.y -= entity.height / 2;
             // scrollOffsetAdjustment.y = (moveValues.newy + entity.height) - solid.posy;
@@ -1601,7 +1621,7 @@ function loadMap(mapID = "stage1", clearMap = true, mapArray = null) {
 
   // FIXME: This is apparently deprecated now and should be fixed. But I have no way to stop recursion.
   try {
-    if (loadMap.caller.name != "makeDefaultEntities") { makeDefaultEntities(); } else { console.log("Map loaded."); }
+    if (loadMap.caller.name != "makeDefaultEntities") { makeDefaultEntities(); stageID = mapID;} else { console.log("Map loaded.");}
   } catch (TypeError) {
     makeDefaultEntities();
     throw "TypeError: loadMap.caller is null, recursion check failed.\n\nMaking default entities.";
@@ -1628,9 +1648,13 @@ const update = (deltaUpdate) => {
       (Math.abs(lastPos[0] - player.posx) > config.playerMaxSpeedError || Math.abs(lastPos[1] - player.posy) > config.playerMaxSpeedError)
     ) {
       console.log("Player moved too fast");
-      player.posx = lastPos[0];
-      player.posy = lastPos[1];
       let collision = detectCollision(player, "solids", false);
+      if (collision.right) {
+        player.posx = lastPos[0] - 4;
+      }
+      if (collision.left) {
+        player.posx = lastPos[0] + 4;
+      }
       if (collision.bottom) {
         player.posy = lastPos[1] + 4;
       }
@@ -1705,11 +1729,8 @@ const end = () => {
 
 window.startUp = () => {
   loadMap();
+  canvas.style.display = "none";
   scoreUpdate(10000);
   MainLoop.setUpdate(update).setDraw(draw).setEnd(end);
   MainLoop.setMaxAllowedFPS(config.fps);
-  setTimeout(() => {
-    console.log("Starting main loop");
-    MainLoop.start();
-  }, 1000);
 };
