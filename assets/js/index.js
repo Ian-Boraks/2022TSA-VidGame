@@ -896,7 +896,7 @@ function animate(entity, secondsPassed) {
           entity.sy = lerp(tempEntitySY, tempLerp, i);
         }
       }
-      if (entity.totalTimePassed.x / entity.animationSpeed >= 1) {
+      if (entity.totalTimePassed.x / entity.animationSpeed >= 1 && entity.sx >= frames) {
         entity.sx = lerp(5490, frames, 0);
         entity.totalTimePassed.x = 0;
       } else if (entity.totalTimePassed.x / entity.animationSpeed <= -1) {
@@ -1462,12 +1462,12 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         const moveValues = returnMoveValues(entity);
         scrollOffsetAdjustment.x = scrollOffsetAdjustment.y = 0;
         if (collision.borderLeft || collision.borderRight) {
-          scrollOffsetAdjustment.x += (moveValues.totMovX * -1) + tempScroll.x;
+          scrollOffsetAdjustment.x += (moveValues.totMovX * -1.1) + tempScroll.x;
           entity.moveValues.x = 0;
           entity.posx = lastPos[0];
         }
         if (collision.borderTop || collision.borderBottom) {
-          scrollOffsetAdjustment.y += (moveValues.totMovY * -1) + tempScroll.y;
+          scrollOffsetAdjustment.y += (moveValues.totMovY * -1.1) + tempScroll.y;
           if (collision.borderTop && entity.crouched) {
             scrollOffsetAdjustment.y -= entity.height / 2;
             // scrollOffsetAdjustment.y = (moveValues.newy + entity.height) - solid.posy;
