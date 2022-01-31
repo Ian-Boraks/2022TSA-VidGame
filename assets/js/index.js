@@ -1622,7 +1622,13 @@ function loadMap(mapID = "stage1", clearMap = true, mapArray = null) {
 
   // FIXME: This is apparently deprecated now and should be fixed. But I have no way to stop recursion.
   try {
-    if (loadMap.caller.name != "makeDefaultEntities") { makeDefaultEntities(); stageID = mapID; } else { console.log("Map loaded."); }
+    if (loadMap.caller.name != "makeDefaultEntities") {
+      makeDefaultEntities();
+      stageID = mapID;
+      if (loadMap.caller.name != "respawn") {respawn();}
+    } else {
+      console.log("Map loaded.");
+    }
   } catch (TypeError) {
     makeDefaultEntities();
     throw "TypeError: loadMap.caller is null, recursion check failed.\n\nMaking default entities.";
