@@ -30,7 +30,7 @@ let infiniteJumps = false;
 let stageID = 'stage1';
 let backgroundOffset = {
   x: 5000,
-  y: 400
+  y: 500
 }
 const backgroundOffsetInit = backgroundOffset;
 
@@ -734,6 +734,12 @@ function animateRunner() {
 
 function respawn() {
   // MainLoop.stop()
+  // try {
+  //   if (respawn.caller.name != "loadMap") { loadMap(stageID); };
+  // } catch (TypeError) {
+  //   loadMap(stageID);
+  //   throw "TypeError: loadMap.caller is null, recursion check failed.\n\nRe-spawning.";
+  // }
   loadMap(stageID);
 
   detectOutOfBoundsToggle = false;
@@ -743,7 +749,7 @@ function respawn() {
   scrollOffsetTotal.x = 0;
   scrollOffsetTotal.y = 0;
   backgroundOffset.x = 0;
-  backgroundOffset.y = 400;
+  backgroundOffset.y = 500;
   canvas.style.backgroundPosition = "bottom " + backgroundOffset.y / -10 + "px right " + backgroundOffset.x / 10 + "px";
 
 
@@ -1590,6 +1596,7 @@ function makeDefaultEntities(justBorders = false) {
 }
 
 function loadMap(mapID = "stage1", clearMap = true, mapArray = null) {
+  // MainLoop.stop();
   void ctx.fillRect(0, 0, canvas.width, canvas.height, 'black');
   if (clearMap) {
     scrollOffsetTotal = { x: 0, y: 0 };
@@ -1625,7 +1632,7 @@ function loadMap(mapID = "stage1", clearMap = true, mapArray = null) {
     if (loadMap.caller.name != "makeDefaultEntities") {
       makeDefaultEntities();
       stageID = mapID;
-      if (loadMap.caller.name != "respawn") {respawn();}
+      // if (loadMap.caller.name != "respawn") { respawn(); }
     } else {
       console.log("Map loaded.");
     }
@@ -1633,6 +1640,7 @@ function loadMap(mapID = "stage1", clearMap = true, mapArray = null) {
     makeDefaultEntities();
     throw "TypeError: loadMap.caller is null, recursion check failed.\n\nMaking default entities.";
   }
+  // MainLoop.start();
 }
 
 function playSound(sound) {
