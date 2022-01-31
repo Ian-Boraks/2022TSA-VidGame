@@ -733,27 +733,20 @@ function animateRunner() {
 }
 
 function respawn() {
+  // MainLoop.stop()
+  loadMap(stageID);
+
   detectOutOfBoundsToggle = false;
   objects.removeDict(objects.player);
   objects.player = null;
-  const newScrollOffset = {
-    x: scrollOffsetTotal.x,
-    y: scrollOffsetTotal.y
-  };
-  backgroundOffset = backgroundOffsetInit;
-  scrollOffsetAdjustment.x = -newScrollOffset.x;
-  scrollOffsetAdjustment.y = -newScrollOffset.y + 261.80000000000007;
+
   scrollOffsetTotal.x = 0;
-  scrollOffsetTotal.y = 261.80000000000007;
-  for (let i = 0; i < objects.nonFrozen.length; i++) {
-    objects.nonFrozen[i].move();
-    objects.nonFrozen[i].draw();
-  }
-  for (let i = 0; i < objects.frozen.length; i++) {
-    objects.frozen[i].draw();
-  }
-  scrollOffsetAdjustment.x = 0;
-  scrollOffsetAdjustment.y = 0;
+  scrollOffsetTotal.y = 0;
+  backgroundOffset.x = 0;
+  backgroundOffset.y = 400;
+  canvas.style.backgroundPosition = "bottom " + backgroundOffset.y / -10 + "px right " + backgroundOffset.x / 10 + "px";
+
+
   if (!objects.player) {
     setTimeout(() => {
       objects.player = new entity(100, 200, 310, 310, ['img', 'player', 'idleR'], ['player']);
