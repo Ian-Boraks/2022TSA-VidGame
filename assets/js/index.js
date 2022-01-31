@@ -1501,7 +1501,7 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
           backgroundOffset.y -= scrollOffsetAdjustment.y;
           // objects.backgroundImg.draw();
           canvas.style.backgroundPosition = "bottom " + backgroundOffset.y / -10 + "px right " + backgroundOffset.x / 10 + "px";
-          console.log(canvas.style.backgroundPosition);
+          // console.log(canvas.style.backgroundPosition);
         }
       }
 
