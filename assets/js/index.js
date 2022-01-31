@@ -1530,14 +1530,14 @@ function makeDefaultEntities(justBorders = false) {
       {
         "width": 1000000, "height": 600,
         "initPosx": -600, "initPosy": -560,
-        "styles": ["draw", "#92d03b"],
+        "styles": ["draw", 'grey'],
         "types": ["solid"]
       } : null,
     !justBorders ?
       {
         "width": 600, "height": 10000,
         "initPosx": -500, "initPosy": 0,
-        "styles": ["draw", "#92d03b"],
+        "styles": ["draw", "grey"],
         "types": ["solid"]
       } : null,
     {
