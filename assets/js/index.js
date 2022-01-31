@@ -28,6 +28,11 @@ let delta;
 let wallJumpFriction;
 let infiniteJumps = false;
 let stageID = 'stage1';
+let backgroundOffset = {
+  x: 5000,
+  y: 400
+}
+const backgroundOffsetInit = backgroundOffset;
 
 let map = {};
 let spriteSheets = {};
@@ -735,6 +740,7 @@ function respawn() {
     x: scrollOffsetTotal.x,
     y: scrollOffsetTotal.y
   };
+  backgroundOffset = backgroundOffsetInit;
   scrollOffsetAdjustment.x = -newScrollOffset.x;
   scrollOffsetAdjustment.y = -newScrollOffset.y + 261.80000000000007;
   scrollOffsetTotal.x = 0;
@@ -1498,9 +1504,11 @@ const detectCollision = function (entity, checkArrayName = "solids", moveEntity 
         scrollOffsetTotal.y += scrollOffsetAdjustment.y;
 
         if (scrollOffsetAdjustment.x + scrollOffsetAdjustment.y != 0) {
-          objects.backgroundImg.totalTimePassed.x -= scrollOffsetAdjustment.x;
-          objects.backgroundImg.totalTimePassed.y -= scrollOffsetAdjustment.y;
-          objects.backgroundImg.draw();
+          backgroundOffset.x -= scrollOffsetAdjustment.x;
+          backgroundOffset.y -= scrollOffsetAdjustment.y;
+          // objects.backgroundImg.draw();
+          canvas.style.backgroundPosition = "bottom " + backgroundOffset.y / -10 + "px right " + backgroundOffset.x / 10 + "px";
+          console.log(canvas.style.backgroundPosition);
         }
       }
 
@@ -1518,13 +1526,13 @@ function makeDefaultEntities(justBorders = false) {
   const borderThickness = config.borderThickness;
   const borderColor = debugMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0)';
   const defaultEntities = [
-    !justBorders ?
-      {
-        "width": canvas.width, "height": canvas.height + 110,
-        "initPosx": 0, "initPosy": -110,
-        "styles": ["img", 'backgroundImg', 'idle'],
-        "types": ["backgroundImg", "background", "frozen"]
-      } : null,
+    // !justBorders ?
+    //   {
+    //     "width": canvas.width, "height": canvas.height + 110,
+    //     "initPosx": 0, "initPosy": -110,
+    //     "styles": ["img", 'backgroundImg', 'idle'],
+    //     "types": ["backgroundImg", "background", "frozen"]
+    //   } : null,
     !justBorders ?
       {
         "width": 1000000, "height": 600,
@@ -1585,7 +1593,7 @@ function makeDefaultEntities(justBorders = false) {
   }
 
   loadMap(null, false, defaultEntities);
-  objects.backgroundImg.draw();
+  // objects.backgroundImg.draw();
 }
 
 function loadMap(mapID = "stage1", clearMap = true, mapArray = null) {
@@ -1621,7 +1629,7 @@ function loadMap(mapID = "stage1", clearMap = true, mapArray = null) {
 
   // FIXME: This is apparently deprecated now and should be fixed. But I have no way to stop recursion.
   try {
-    if (loadMap.caller.name != "makeDefaultEntities") { makeDefaultEntities(); stageID = mapID;} else { console.log("Map loaded.");}
+    if (loadMap.caller.name != "makeDefaultEntities") { makeDefaultEntities(); stageID = mapID; } else { console.log("Map loaded."); }
   } catch (TypeError) {
     makeDefaultEntities();
     throw "TypeError: loadMap.caller is null, recursion check failed.\n\nMaking default entities.";
@@ -1677,7 +1685,7 @@ const draw = () => {
   }
   animateRunner();
 
-  objects.backgroundImg.draw();
+  // objects.backgroundImg.draw();
 
   for (let i = 0; i < objects.frozen.length; i++) {
     objects.frozen[i].draw();

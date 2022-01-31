@@ -37,6 +37,9 @@ body {
 #game-canvas {
 	position: absolute;
 	bottom: 0px;
+  background-image: url("/assets/img/background1.jpg");
+  background-position: bottom 0 right 0;
+  background-repeat: repeat-x;
 }
 
 #game-window h1 {
