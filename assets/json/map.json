@@ -10,14 +10,6 @@
 			"types": ["trap"]
 		},
 		{
-			"width": 315,
-			"height": 105,
-			"initPosx": 2170,
-			"initPosy": 3325,
-			"styles": ["img", "trap", "idle"],
-			"types": ["trap"]
-		},
-		{
 			"width": 70,
 			"height": 35,
 			"initPosx": 2100,
