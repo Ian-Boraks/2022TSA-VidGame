@@ -629,6 +629,8 @@ function onKeyDown(event) {
       keys.sixKey[0] = true;
       typeOfEntity = 'background'
       break;
+    case 82:
+      if (objects.player) { respawn(); };
   }
 }
 
