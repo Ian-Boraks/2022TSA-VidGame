@@ -733,6 +733,8 @@ function animateRunner() {
 }
 
 function respawn() {
+  objects.removeDict(objects.player);
+  objects.player = null;
   // MainLoop.stop()
   // try {
   //   if (respawn.caller.name != "loadMap") { loadMap(stageID); };
@@ -743,8 +745,7 @@ function respawn() {
   loadMap(stageID);
 
   detectOutOfBoundsToggle = false;
-  objects.removeDict(objects.player);
-  objects.player = null;
+  
 
   scrollOffsetTotal.x = 0;
   scrollOffsetTotal.y = 0;
