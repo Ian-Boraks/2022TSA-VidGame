@@ -1,14 +1,7 @@
 {
 	"blank": [],
 	"stage4": [
-		{
-			"width": 210,
-			"height": 105,
-			"initPosx": 105,
-			"initPosy": 3290,
-			"styles": ["img", "trap", "idle"],
-			"types": ["trap"]
-		},
+    {"width":350,"height":70,"initPosx":105,"initPosy":2100,"styles":["img","solid_brick","idle"],"types":["solid"]},{"width":70,"height":210,"initPosx":315,"initPosy":2415,"styles":["img","solid_brick","idle"],"types":["solid"]},{"width":70,"height":70,"initPosx":35,"initPosy":2100,"styles":["img","solid_brick","idle"],"types":["solid"]},{"width":420,"height":105,"initPosx":35,"initPosy":1995,"styles":["img","trap","idle"],"types":["trap"]},{"width":420,"height":70,"initPosx":35,"initPosy":1925,"styles":["img","solid_brick","idle"],"types":["solid"]},{"width":70,"height":245,"initPosx":455,"initPosy":1925,"styles":["img","solid_brick","idle"],"types":["solid"]},{"width":385,"height":70,"initPosx":2100,"initPosy":3255,"styles":["img","solid_brick","idle"],"types":["solid"]},
 		{
 			"width": 315,
 			"height": 105,
