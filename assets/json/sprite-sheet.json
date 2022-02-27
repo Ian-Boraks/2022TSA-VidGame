@@ -1,6 +1,6 @@
 {
 	"player": {
-		"img": "/assets/img/player.png",
+		"img": "assets/img/player.png",
 		"idleL": {
 			"frames": 1,
 			"sx": 200,
@@ -45,7 +45,7 @@
 		}
 	},
   "solid_brick": {
-    "img": "/assets/img/Stone.png",
+    "img": "assets/img/Stone.png",
     "idle": {
       "frames": 1,
       "sx": 0,
@@ -55,7 +55,7 @@
     }
   },
   "trap": {
-    "img": "/assets/img/trap.png",
+    "img": "assets/img/trap.png",
     "idle": {
       "frames": 499,
       "sx": 0,
@@ -65,7 +65,7 @@
     }
   },
   "backgroundImg": {
-    "img": "/assets/img/background1.jpg",
+    "img": "assets/img/background1.jpg",
     "idle": {
       "frames": 10980,
       "sx": 5490,
