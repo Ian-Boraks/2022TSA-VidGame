@@ -11,7 +11,8 @@
 <!-- Status -->
 
 <h4 align="center"> 
-	2022TSA VidGame 🚀 Museum Runner <br><br>
+	2022TSA VidGame 🚀 Museum Runner <br>
+	Third Place 🥉 at COTSA 2022 <br><br>
 </h4> 
 
 # CONTROLS #
