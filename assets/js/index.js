@@ -115,7 +115,7 @@ let totalFrames = 0;
 // alert("To use the editor, press enter.\nEditor controls:\nClick+Drag to make solid\nShift+Click+Drag to make ladder\nPress enter again to exit and to have map changes output to console\n\n\nGame Controls:\nSpace to jump\nA to move left\nD to move right\nS to crouch");
 if (window.location.href.indexOf('#') > -1) {
 } else {
-  window.location.href = "/readme.html";
+  window.location.href = "./readme.html";
 }
 
 const canvas = document.getElementById("game-canvas");
