@@ -413,7 +413,7 @@ class entity {
         objects.img.push(this);
         this.imgLink = styles[1];
         this.img = new Image();
-        this.img.src = spriteSheets[styles[1]]["img"];
+        this.img.src = ROOT + spriteSheets[styles[1]]["img"];
         this.animation = styles[2];
         this.sx = spriteSheets[styles[1]][this.animation]["sx"];
         this.sy = spriteSheets[styles[1]][this.animation]["sy"];
