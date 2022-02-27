@@ -1,3 +1,12 @@
+var ROOT;
+
+if (window.location.href.indexOf('#') > -1) {
+  ROOT = window.location.pathname;
+} else {
+  ROOT = window.location.pathname;
+  window.location.href = ROOT + "readme.html";
+  console.log(ROOT);
+}
 
 const config = {
   gravityEnabled: true,
@@ -40,7 +49,7 @@ let spriteSheets = {};
 $.getJSON(
   {
     async: false,
-    url: '/assets/json/map.json',
+    url: ROOT + 'assets/json/map.json',
     success: (data) => {
       map = data;
     },
@@ -55,7 +64,7 @@ $.getJSON(
 $.getJSON(
   {
     async: false,
-    url: '/assets/json/sprite-sheet.json',
+    url: ROOT + 'assets/json/sprite-sheet.json',
     success: function (data) {
       spriteSheets = data;
     }
@@ -113,10 +122,8 @@ let totalFrames = 0;
 
 // * ON LOAD --------------------------------------------------------
 // alert("To use the editor, press enter.\nEditor controls:\nClick+Drag to make solid\nShift+Click+Drag to make ladder\nPress enter again to exit and to have map changes output to console\n\n\nGame Controls:\nSpace to jump\nA to move left\nD to move right\nS to crouch");
-if (window.location.href.indexOf('#') > -1) {
-} else {
-  window.location.href = "./readme.html";
-}
+// base_url = Url.Content("./");
+// Console.log(base_url);
 
 const canvas = document.getElementById("game-canvas");
 const tempCanvasDisplay = canvas.style.display;
@@ -177,46 +184,46 @@ soundManager.onready(function () {
   // Music: https://www.chosic.com/free-music/all/
   soundManager.createSound({
     id: 'backgroundMusic',
-    url: '/assets/sound/CHIPTUNE_The_Old_Tower_Inn.mp3',
+    url: ROOT + 'assets/sound/CHIPTUNE_The_Old_Tower_Inn.mp3',
     onfinish: function () { playSound('backgroundMusic1'); },
     volume: 70
   });
   soundManager.createSound({
     id: 'backgroundMusic1',
-    url: '/assets/sound/CHIPTUNE_Minstrel_Dance.mp3',
+    url: ROOT + 'assets/sound/CHIPTUNE_Minstrel_Dance.mp3',
     onfinish: function () { setTimeout(() => { playSound('backgroundMusic2'); }, 2000) },
     volume: 70
   });
   soundManager.createSound({
     id: 'backgroundMusic2',
-    url: '/assets/sound/CHIPTUNE_The_Bards_Tale.mp3',
+    url: ROOT + 'assets/sound/CHIPTUNE_The_Bards_Tale.mp3',
     onfinish: function () { setTimeout(() => { playSound('backgroundMusic'); }, 2000) },
     volume: 70
   });
   soundManager.createSound({
     id: 'trombone',
-    url: '/assets/sound/FX68GWY-funny-trombone-slide-accent.mp3',
+    url: ROOT + 'assets/sound/FX68GWY-funny-trombone-slide-accent.mp3',
     autoLoad: false,
   });
   soundManager.createSound({
     id: 'pickUp',
-    url: '/assets/sound/mixkit-arcade-mechanical-bling-210.wav',
+    url: ROOT + 'assets/sound/mixkit-arcade-mechanical-bling-210.wav',
     volume: 50
   });
   soundManager.createSound({
     id: 'jump',
-    url: '/assets/sound/mixkit-player-jumping-in-a-video-game-2043.wav',
+    url: ROOT + 'assets/sound/mixkit-player-jumping-in-a-video-game-2043.wav',
     volume: 30
   });
   soundManager.createSound({
     id: 'wallJump',
-    url: '/assets/sound/mixkit-video-game-spin-jump-2648.wav',
+    url: ROOT + 'assets/sound/mixkit-video-game-spin-jump-2648.wav',
     volume: 50,
     autoLoad: false
   });
   soundManager.createSound({
     id: 'death',
-    url: '/assets/sound/163442__under7dude__man-dying.wav',
+    url: ROOT + 'assets/sound/163442__under7dude__man-dying.wav',
     volume: 100,
   });
 });
@@ -747,7 +754,7 @@ function respawn() {
   loadMap(stageID);
 
   detectOutOfBoundsToggle = false;
-  
+
 
   scrollOffsetTotal.x = 0;
   scrollOffsetTotal.y = 0;
