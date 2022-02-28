@@ -1,4 +1,4 @@
-<h1 align="center"><a href="“https://www.ianboraks.info/2022TSA-VidGame" target="_blank">2022TSA VidGame</a></h1>
+<h1 align="center"><a href="https://www.ianboraks.info/2022TSA-VidGame" target="_blank">2022TSA VidGame</a></h1>
 
 <p align="center">
   <img alt="Github top language" src="https://img.shields.io/github/languages/top/TSAVideoGame2022/2022tsa-vidgame?color=56BEB8">
