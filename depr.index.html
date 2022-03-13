@@ -14,35 +14,34 @@
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script src="assets/js/MainLoop/mainloop.min.js"></script>
+  <!-- <script src="assets/js/utility.js"></script> -->
   <script src="assets/js/soundmanager/soundmanager2.js"></script>
+
+  <link rel="preload" as="image" href="https://github.com/Ian-Boraks/2022TSA-VidGame/blob/main/assets/img/background1.1.jpg?raw=true" srcset="https://github.com/Ian-Boraks/2022TSA-VidGame/blob/main/assets/img/background1.1.jpg?raw=true">
+  <link rel="preload" as="video" href="assets/vid/0001-0181.mp4" srcset="assets/vid/0001-0181.mp4">
 
 </head>
 
 <body>
   <div id="master">
     <div id="game-window">
-      <!-- <video id="intro" preload="auto">
+      <video id="intro" preload="auto">
         <source src="assets/vid/0001-0181.mp4" type="video/mp4">
         Video not supported
 
       </video>
-      <h1 id="startText">PRESS <em style="color:red">D</em> TO START GAME</h1> -->
+      <h1 id="startText">PRESS <em style="color:red">D</em> TO START GAME</h1>
       <canvas id="game-canvas">
 
       </canvas>
     </div>
   </div>
+  <!-- <script src="assets/js/index.min.js"></script> -->
   <script>
-
+    
   </script>
-  <script src="assets/js/utility.js"></script>
-  <script type="text/javascript">
-    window.dispatchEvent(new Event('resize'));
+  <script src="assets/js/index.js">
   </script>
-  <script src="assets/js/entity.js"></script>
-  <script src="assets/js/player.js"></script>
-  <script src="assets/js/game.js"></script>
-
 </body>
 
 </html>

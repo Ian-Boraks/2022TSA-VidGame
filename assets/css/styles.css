@@ -37,7 +37,7 @@ body {
 #game-canvas {
 	position: absolute;
 	bottom: 0px;
-	background-image: url("https://github.com/Ian-Boraks/2022TSA-VidGame/blob/main/assets/img/background1.1.jpg?raw=true");
+	/* background-image: url("https://github.com/Ian-Boraks/2022TSA-VidGame/blob/main/assets/img/background1.1.jpg?raw=true"); */
 	background-position: bottom 0 right 0;
 	background-repeat: repeat-x;
 }
