@@ -2,13 +2,24 @@ class Player extends GameObject {
   constructor(pos, w = 100, h = 200, mass = 10, draw = true) {
     super(pos, w, h, false, draw, mass);
 
+    this.touchingGround = false;
     this.spriteName = 'player';
     this.drawType = 'sprite';
     this.vel = new Vector2(0, 0);
-    this.type = GameObjectType.Player;
+    this.type = GameObjectType.PLAYER;
     this.fixed = false;
 
     this.setupSprite();
+  }
+
+  update() {
+    this.vel.y += config.gravity;
+
+    if (this.touchingGround) {
+      this.vel.x += this.vel.x > 1 ? -.5 : this.vel.x < -1 ? .5 : -this.vel.x;
+    }
+
+    super.update();
   }
 
   draw() {
@@ -22,11 +33,10 @@ class Player extends GameObject {
     }
   }
 
-  setupSprite() {
+  setupSprite(animationName = 'idleR') {
     this.img = new Image();
     this.img.src = ROOT + spriteSheets[this.spriteName]["img"];
-    console.log(this.img.src)
-    this.animation = 'idleR';
+    this.animation = animationName;
     this.sx = spriteSheets[this.spriteName][this.animation]["sx"];
     this.sy = spriteSheets[this.spriteName][this.animation]["sy"];
     this.sw = spriteSheets[this.spriteName][this.animation]["sWidth"];

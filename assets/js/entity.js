@@ -1,5 +1,5 @@
 class GameObject {
-  constructor(pos = new Vector2(0, 0), w = 0, h = 0, fixed = true, draw = true, mass = 1) {
+  constructor(pos = new Vector2(0, 0), w = 0, h = 0, mass = 1, fixed = true, draw = true) {
     this.pos = pos;
     this.w = w;
     this.h = h;
@@ -9,16 +9,14 @@ class GameObject {
 
     this.drawType = null;
     this.vel = new Vector2(0, 0);
-    this.type = GameObjectType.None;
+    this.type = GameObjectType.NONE;
     this.isColliding = false;
 
     gameObjects.push(this);
   }
 
   update() {
-    if (this.fixed) return;
-    this.vel.y += config.gravity;
-    this.vel.x += this.vel.x > 0 ? -.001 : .001;
+    
   }
 
   draw() {
@@ -47,10 +45,10 @@ class GameObject {
 
 class SolidRect extends GameObject {
   constructor(pos = new Vector2(0, 0), w = 0, h = 0, color = 'pink', mass = 1, fixed = true, draw = true) {
-    super(pos, w, h, fixed, draw, mass);
+    super(pos, w, h, mass, fixed, draw);
 
     this.color = color;
-    this.type = GameObjectType.Solid;
+    this.type = GameObjectType.SOLID;
     this.drawType = 'rect';
 
     super.draw()
@@ -59,11 +57,11 @@ class SolidRect extends GameObject {
 
 class SolidSprite extends GameObject {
   constructor(pos = new Vector2(0, 0), w = 0, h = 0, spriteName = 'stone', mass = 1, fixed = true, draw = true) {
-    super(pos, w, h, fixed, draw, mass);
+    super(pos, w, h, mass, fixed, draw);
 
     this.spriteName = spriteName;
     this.drawType = 'sprite';
-    this.type = GameObjectType.Solid;
+    this.type = GameObjectType.SOLID;
 
     this.setupSprite();
     super.draw()
@@ -72,7 +70,6 @@ class SolidSprite extends GameObject {
   setupSprite() {
     this.img = new Image();
     this.img.src = ROOT + spriteSheets[this.spriteName]["img"];
-    console.log(this.img.src)
     this.animation = 'idle';
     this.sx = spriteSheets[this.spriteName][this.animation]["sx"];
     this.sy = spriteSheets[this.spriteName][this.animation]["sy"];
@@ -85,7 +82,7 @@ class BackgroundRect extends SolidRect {
   constructor(pos = new Vector2(0, 0), w = 0, h = 0, color = 'pink', fixed = true, draw = true) {
     super(pos, w, h, color, fixed, draw);
 
-    this.type = GameObjectType.Background;
+    this.type = GameObjectType.BACKGROUND;
   }
 
   draw() {
@@ -102,7 +99,7 @@ class BackgroundSprite extends SolidSprite {
   constructor(pos = new Vector2(0, 0), w = 0, h = 0, spriteName = 'stone', fixed = true, draw = true) {
     super(pos, w, h, spriteName, fixed, draw);
 
-    this.type = GameObjectType.Background;
+    this.type = GameObjectType.BACKGROUND;
   }
 
   draw() {

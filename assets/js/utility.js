@@ -1,13 +1,34 @@
 // * SHARED ENUMERATORS -----------------------------------------------
 const GameObjectType = {
-  None: null,
-  Solid: 'Solid',
-  Background: 'Background',
-  Trap: 'Trap',
-  Player: 'Player',
-  Token: 'Token',
-  Waterfall: 'Waterfall',
-  Text: 'Text',
+  NONE: null,
+  SOLID: 'Solid',
+  BACKGROUND: 'Background',
+  TRAP: 'Trap',
+  PLAYER: 'Player',
+  TOKEN: 'Token',
+  WATERFALL: 'Waterfall',
+  TEXT: 'Text',
+};
+
+const KEY = {
+  BACKSPACE: 8,
+  TAB: 9,
+  RETURN: 13,
+  ESC: 27,
+  SPACE: 32,
+  PAGEUP: 33,
+  PAGEDOWN: 34,
+  END: 35,
+  HOME: 36,
+  LEFT: 37,
+  UP: 38,
+  RIGHT: 39,
+  DOWN: 40,
+  INSERT: 45,
+  DELETE: 46,
+  ZERO: 48, ONE: 49, TWO: 50, THREE: 51, FOUR: 52, FIVE: 53, SIX: 54, SEVEN: 55, EIGHT: 56, NINE: 57,
+  A: 65, B: 66, C: 67, D: 68, E: 69, F: 70, G: 71, H: 72, I: 73, J: 74, K: 75, L: 76, M: 77, N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 89, Z: 90,
+  TILDA: 192
 };
 
 
@@ -34,6 +55,8 @@ class Vector2 {
 // TODO: Change ROOT once off of own domain
 var ROOT = window.location.pathname;
 ROOT = '/';
+
+var pressedKeys = [];
 
 const config = {
   gravity: .5,
@@ -96,15 +119,23 @@ window.addEventListener('resize', () => {
   console.log("Resized canvas");
 });
 
-window.addEventListener('DOMContentLoaded', function () {
-  console.log("DOM loaded");
-});
+window.addEventListener('DOMContentLoaded', function () { console.log("DOM loaded"); });
+
+$(window).focus(function () { MainLoop.start(); });
+$(window).blur(function () { MainLoop.stop(); });
 
 
 // * UTILITY FUNCTIONS ------------------------------------------------
 const noop = () => { /* No operation function */ }
 
 const rectIntersect = (obj1, obj2) => {
+  collisionTypes = {
+    rightCollision: false,
+    leftCollision: false,
+    topCollision: false,
+    bottomCollision: false,
+  }
+
   let x1 = obj1.pos.x;
   let y1 = obj1.pos.y;
   let w1 = obj1.w;
@@ -121,45 +152,6 @@ const rectIntersect = (obj1, obj2) => {
   }
   return true;
 }
-
-Number.prototype.round = (num, roundUp = false) => {
-  if (roundUp) {
-    return Math.ceil(this / num) * num;
-  } else {
-    return Math.round(this / num) * num;
-  }
-}
-
-Object.prototype.getKeysByValue = (selection) => {
-  // console.log(
-  //   Object.keys(Object.fromEntries(Object.entries(this).filter((element) => element[1][0] == selection)))
-  // );
-  return Object.keys(Object.fromEntries(Object.entries(this).filter((element) => element[1][0] == selection)));
-}
-
-Array.prototype.filterArray = (value) => {
-  return this.filter(function (ele) {
-    return ele != value;
-  });
-}
-
-Array.prototype.removeArray = (what) => {
-  const index = this.indexOf(what)
-  if (index > -1) { this.splice(index, 1); }
-};
-
-Object.prototype.removeDict = (what) => {
-  let keyList = Object.keys(this);
-  if (this == objects) {
-    keyList.removeArray("player");
-    keyList.removeArray("origin");
-    keyList.removeArray("bounds");
-    keyList.removeArray("backgroundImg")
-  }
-  for (let i = 0; i < keyList.length; i++) {
-    this[keyList[i]].removeArray(what);
-  }
-};
 
 const updateClipboard = (newClip) => {
   navigator.clipboard.writeText(newClip).then(function () {
