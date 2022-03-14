@@ -129,12 +129,12 @@ $(window).blur(function () { MainLoop.stop(); });
 const noop = () => { /* No operation function */ }
 
 const rectIntersect = (obj1, obj2) => {
-  collisionTypes = {
-    rightCollision: false,
-    leftCollision: false,
-    topCollision: false,
-    bottomCollision: false,
-  }
+  // collisionTypes = {
+  //   rightCollision: false,
+  //   leftCollision: false,
+  //   topCollision: false,
+  //   bottomCollision: false,
+  // }
 
   let x1 = obj1.pos.x;
   let y1 = obj1.pos.y;

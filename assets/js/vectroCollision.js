@@ -34,6 +34,12 @@ function detectCollision() {
 
         if (obj1.fixed || obj2.fixed) impulse = 0;
 
+        let impulse = 2 * speed / (obj1.mass + obj2.mass);
+        obj1.vx -= (impulse * obj2.mass * vCollisionNorm.x);
+        obj1.vy -= (impulse * obj2.mass * vCollisionNorm.y);
+        obj2.vx += (impulse * obj1.mass * vCollisionNorm.x);
+        obj2.vy += (impulse * obj1.mass * vCollisionNorm.y);
+
         obj1.vel.Add(new Vector2(
           -impulse * obj2.mass * vCollisionNorm.x,
           -impulse * obj2.mass * vCollisionNorm.y
