@@ -32,18 +32,18 @@ const KEY = {
 };
 
 const Colors = {
-  transparent: 'rgba(0, 0, 0, 0)',
+  TRANSPARENT: 'rgba(0, 0, 0, 0)',
 };
 
 
 // * SHARED CLASSES --------------------------------------------------
-class Vector2 {
+class Vec2 {
   constructor(x, y) {
     this.x = x;
     this.y = y;
   }
 
-  Lerp(start = new Vector2(0, 0), end = new Vector2(0, 0), speed = 1) {
+  Lerp(start = new Vec2(0, 0), end = new Vec2(0, 0), speed = 1) {
     this.x = Lerp(start.x, end.x, speed);
     this.y = Lerp(start.y, end.y, speed);
   }

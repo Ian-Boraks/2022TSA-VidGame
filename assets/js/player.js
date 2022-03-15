@@ -1,11 +1,11 @@
 class Player extends GameObject {
-  constructor(pos, w = 100, h = 200, draw = true) {
-    super(pos, w, h, false, draw);
+  constructor(pos, size = new Vec2(100, 200), draw = true) {
+    super(pos, size, false, draw);
 
     this.touchingGround = false;
     this.spriteName = 'player';
     this.drawType = 'sprite';
-    this.vel = new Vector2(0, 0);
+    this.vel = new Vec2(0, 0);
     this.type = GameObjectType.PLAYER;
     this.fixed = false;
 
@@ -23,7 +23,7 @@ class Player extends GameObject {
     if (config.debug) {
       ctx.beginPath();
       ctx.fillStyle = this.isColliding ? "rgba(255, 10, 255, 0.2)" : "rgba(255, 255, 255, 0.2)";
-      ctx.fillRect(this.pos.x, this.pos.y, this.w, this.h);
+      ctx.fillRect(this.pos.x, this.pos.y, this.size.x, this.size.y);
       ctx.closePath();
     }
   }

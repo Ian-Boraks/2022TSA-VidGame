@@ -1,14 +1,13 @@
 class GameObject {
-  constructor(pos = new Vector2(0, 0), w = 0, h = 0, fixed = true, draw = true) {
+  constructor(pos = new Vec2(0, 0), size = new Vec2(0, 0), fixed = true, draw = true) {
     this.pos = pos;
-    this.w = w;
-    this.h = h;
+    this.size = size;
     this.drawEnabled = draw;
     this.fixed = fixed;
 
     this.drawType = null;
-    this.vel = new Vector2(0, 0);
-    this.center = new Vector2(this.pos.x + this.w / 2, this.pos.y + this.h / 2);
+    this.vel = new Vec2(0, 0);
+    this.center = new Vec2(this.pos.x + this.size.x / 2, this.pos.y + this.size.y / 2);
     this.type = GameObjectType.NONE;
     this.isColliding = false;
 
@@ -26,8 +25,8 @@ class GameObject {
 
     let dx = gameObject.center.x - this.center.x;// x difference between centers
     let dy = gameObject.center.y - this.center.y;// y difference between centers
-    let aw = (gameObject.w + this.w) * 0.5;// average width
-    let ah = (gameObject.h + this.h) * 0.5;// average height
+    let aw = (gameObject.size.x + this.size.x) * 0.5;// average width
+    let ah = (gameObject.size.y + this.size.y) * 0.5;// average height
 
     /* If either distance is greater than the average dimension there is no collision. */
     if (Math.abs(dx) > aw || Math.abs(dy) > ah) return false;
@@ -35,18 +34,18 @@ class GameObject {
     /* To determine which region of this rectangle the rect's center
     point is in, we have to account for the scale of the this rectangle.
     To do that, we divide dx and dy by it's width and height respectively. */
-    if (Math.abs(dx / this.w) > Math.abs(dy / this.h)) {
+    if (Math.abs(dx / this.size.x) > Math.abs(dy / this.size.y)) {
 
       if (dx < 0) { // left
         if (gameObject.vel.x < 0) return false;
-        gameObject.pos.x = this.pos.x - gameObject.w;
+        gameObject.pos.x = this.pos.x - gameObject.size.x;
         gameObject.vel.x = 0;
 
         collision.left = true;
       }
       else { // right
         if (gameObject.vel.x > 0) return false;
-        gameObject.pos.x = this.pos.x + this.w;
+        gameObject.pos.x = this.pos.x + this.size.x;
         gameObject.vel.x = 0;
 
         collision.right = true;
@@ -56,7 +55,7 @@ class GameObject {
 
       if (dy < 0) { // top
         if (gameObject.vel.y < 0) return false;
-        gameObject.pos.y = this.pos.y - gameObject.h;
+        gameObject.pos.y = this.pos.y - gameObject.size.y;
         gameObject.vel.y = 0;
         gameObject.touchingGround = true;
 
@@ -64,7 +63,7 @@ class GameObject {
       }
       else { // bottom
         if (gameObject.vel.y > 0) return false;
-        gameObject.pos.y = this.pos.y + this.h;
+        gameObject.pos.y = this.pos.y + this.size.y;
         gameObject.vel.y = 0;
 
         collision.bottom = true;
@@ -79,7 +78,7 @@ class GameObject {
   update() {
     this.isColliding = false;
     if (!this.fixed) this.vel.y += config.gravity;
-    this.center = new Vector2(this.pos.x + this.w / 2, this.pos.y + this.h / 2);
+    this.center = new Vec2(this.pos.x + this.size.x / 2, this.pos.y + this.size.y / 2);
   }
 
   draw() {
@@ -89,11 +88,11 @@ class GameObject {
       case 'rect':
         ctx.beginPath();
         ctx.fillStyle = this.isColliding ? 'pink' : this.color;
-        ctx.fillRect(this.pos.x, this.pos.y, this.w, this.h);
+        ctx.fillRect(this.pos.x, this.pos.y, this.size.x, this.size.y);
         ctx.closePath();
         break;
       case 'sprite':
-        ctx.drawImage(this.img, this.sx, this.sy, this.sw, this.sh, this.pos.x, this.pos.y, this.w, this.h);
+        ctx.drawImage(this.img, this.sx, this.sy, this.sw, this.sh, this.pos.x, this.pos.y, this.size.x, this.size.y);
         break;
       default:
         console.error('Entity drawType not set or invalid');
@@ -107,8 +106,8 @@ class GameObject {
 }
 
 class SolidRect extends GameObject {
-  constructor(pos = new Vector2(0, 0), w = 0, h = 0, color = 'pink', fixed = true, draw = true) {
-    super(pos, w, h, fixed, draw);
+  constructor(pos = new Vec2(0, 0), size = new Vec2(0, 0), color = 'pink', fixed = true, draw = true) {
+    super(pos, size, fixed, draw);
 
     this.color = color;
     this.type = GameObjectType.SOLID;
@@ -119,8 +118,8 @@ class SolidRect extends GameObject {
 }
 
 class SolidSprite extends GameObject {
-  constructor(pos = new Vector2(0, 0), w = 0, h = 0, spriteName = 'stone', fixed = true, draw = true) {
-    super(pos, w, h, fixed, draw);
+  constructor(pos = new Vec2(0, 0), size = new Vec2(0, 0), spriteName = 'stone', fixed = true, draw = true) {
+    super(pos, size, fixed, draw);
 
     this.spriteName = spriteName;
     this.drawType = 'sprite';
@@ -142,8 +141,8 @@ class SolidSprite extends GameObject {
 }
 
 class BackgroundRect extends SolidRect {
-  constructor(pos = new Vector2(0, 0), w = 0, h = 0, color = 'pink', fixed = true, draw = true) {
-    super(pos, w, h, color, fixed, draw);
+  constructor(pos = new Vec2(0, 0), size = new Vec2(0, 0), color = 'pink', fixed = true, draw = true) {
+    super(pos, size, color, fixed, draw);
 
     this.type = GameObjectType.BACKGROUND;
   }
@@ -153,14 +152,14 @@ class BackgroundRect extends SolidRect {
     super.draw()
     ctx.beginPath();
     ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-    ctx.fillRect(this.pos.x, this.pos.y, this.w, this.h);
+    ctx.fillRect(this.pos.x, this.pos.y, this.size.x, this.size.y);
     ctx.closePath();
   }
 }
 
 class BackgroundSprite extends SolidSprite {
-  constructor(pos = new Vector2(0, 0), w = 0, h = 0, spriteName = 'stone', fixed = true, draw = true) {
-    super(pos, w, h, spriteName, fixed, draw);
+  constructor(pos = new Vec2(0, 0), size = new Vec2(0, 0), spriteName = 'stone', fixed = true, draw = true) {
+    super(pos, size, spriteName, fixed, draw);
 
     this.type = GameObjectType.BACKGROUND;
   }
@@ -170,7 +169,7 @@ class BackgroundSprite extends SolidSprite {
     super.draw()
     ctx.beginPath();
     ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-    ctx.fillRect(this.pos.x, this.pos.y, this.w, this.h);
+    ctx.fillRect(this.pos.x, this.pos.y, this.size.x, this.size.y);
     ctx.closePath();
   }
 }
