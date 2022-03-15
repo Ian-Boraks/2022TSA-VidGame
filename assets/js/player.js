@@ -1,5 +1,5 @@
 class Player extends GameObject {
-  constructor(pos, w = 100, h = 200, mass = 10, draw = true) {
+  constructor(pos, w = 100, h = 100, mass = 10, draw = true) {
     super(pos, w, h, false, draw, mass);
 
     this.touchingGround = false;
@@ -13,8 +13,6 @@ class Player extends GameObject {
   }
 
   update() {
-    this.vel.y += config.gravity;
-
     if (this.touchingGround) {
       this.vel.x += this.vel.x > 1 ? -.5 : this.vel.x < -1 ? .5 : -this.vel.x;
     }
