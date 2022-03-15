@@ -1,22 +1,85 @@
 class GameObject {
-  constructor(pos = new Vector2(0, 0), w = 0, h = 0, mass = 1, fixed = true, draw = true) {
+  constructor(pos = new Vector2(0, 0), w = 0, h = 0, fixed = true, draw = true) {
     this.pos = pos;
     this.w = w;
     this.h = h;
-    this.mass = mass;
     this.drawEnabled = draw;
     this.fixed = fixed;
 
     this.drawType = null;
     this.vel = new Vector2(0, 0);
+    this.center = new Vector2(this.pos.x + this.w / 2, this.pos.y + this.h / 2);
     this.type = GameObjectType.NONE;
     this.isColliding = false;
 
     gameObjects.push(this);
+
+  }
+
+  collideRectangle(gameObject) {
+    let collision = {
+      top: false,
+      bottom: false,
+      left: false,
+      right: false
+    }
+
+    let dx = gameObject.center.x - this.center.x;// x difference between centers
+    let dy = gameObject.center.y - this.center.y;// y difference between centers
+    let aw = (gameObject.w + this.w) * 0.5;// average width
+    let ah = (gameObject.h + this.h) * 0.5;// average height
+
+    /* If either distance is greater than the average dimension there is no collision. */
+    if (Math.abs(dx) > aw || Math.abs(dy) > ah) return false;
+
+    /* To determine which region of this rectangle the rect's center
+    point is in, we have to account for the scale of the this rectangle.
+    To do that, we divide dx and dy by it's width and height respectively. */
+    if (Math.abs(dx / this.w) > Math.abs(dy / this.h)) {
+
+      if (dx < 0) { // left
+        if (gameObject.vel.x < 0) return false;
+        gameObject.pos.x = this.pos.x - gameObject.w;
+        gameObject.vel.x = 0;
+
+        collision.left = true;
+      }
+      else { // right
+        if (gameObject.vel.x > 0) return false;
+        gameObject.pos.x = this.pos.x + this.w;
+        gameObject.vel.x = 0;
+
+        collision.right = true;
+      }
+
+    } else {
+
+      if (dy < 0) { // top
+        if (gameObject.vel.y < 0) return false;
+        gameObject.pos.y = this.pos.y - gameObject.h;
+        gameObject.vel.y = 0;
+        gameObject.touchingGround = true;
+
+        collision.top = true;
+      }
+      else { // bottom
+        if (gameObject.vel.y > 0) return false;
+        gameObject.pos.y = this.pos.y + this.h;
+        gameObject.vel.y = 0;
+
+        collision.bottom = true;
+      }
+    }
+
+    this.isColliding = true;
+    gameObject.isColliding = true;
+    return true;
   }
 
   update() {
-    
+    this.isColliding = false;
+    if (!this.fixed) this.vel.y += config.gravity;
+    this.center = new Vector2(this.pos.x + this.w / 2, this.pos.y + this.h / 2);
   }
 
   draw() {
@@ -44,8 +107,8 @@ class GameObject {
 }
 
 class SolidRect extends GameObject {
-  constructor(pos = new Vector2(0, 0), w = 0, h = 0, color = 'pink', mass = 1, fixed = true, draw = true) {
-    super(pos, w, h, mass, fixed, draw);
+  constructor(pos = new Vector2(0, 0), w = 0, h = 0, color = 'pink', fixed = true, draw = true) {
+    super(pos, w, h, fixed, draw);
 
     this.color = color;
     this.type = GameObjectType.SOLID;
@@ -56,8 +119,8 @@ class SolidRect extends GameObject {
 }
 
 class SolidSprite extends GameObject {
-  constructor(pos = new Vector2(0, 0), w = 0, h = 0, spriteName = 'stone', mass = 1, fixed = true, draw = true) {
-    super(pos, w, h, mass, fixed, draw);
+  constructor(pos = new Vector2(0, 0), w = 0, h = 0, spriteName = 'stone', fixed = true, draw = true) {
+    super(pos, w, h, fixed, draw);
 
     this.spriteName = spriteName;
     this.drawType = 'sprite';

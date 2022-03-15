@@ -31,6 +31,10 @@ const KEY = {
   TILDA: 192
 };
 
+const Colors = {
+  transparent: 'rgba(0, 0, 0, 0)',
+};
+
 
 // * SHARED CLASSES --------------------------------------------------
 class Vector2 {

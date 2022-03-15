@@ -1,6 +1,6 @@
 class Player extends GameObject {
-  constructor(pos, w = 100, h = 100, mass = 10, draw = true) {
-    super(pos, w, h, false, draw, mass);
+  constructor(pos, w = 100, h = 200, draw = true) {
+    super(pos, w, h, false, draw);
 
     this.touchingGround = false;
     this.spriteName = 'player';
@@ -13,10 +13,7 @@ class Player extends GameObject {
   }
 
   update() {
-    if (this.touchingGround) {
-      this.vel.x += this.vel.x > 1 ? -.5 : this.vel.x < -1 ? .5 : -this.vel.x;
-    }
-
+    if (this.touchingGround) this.vel.x *= 0.9;
     super.update();
   }
 
