@@ -65,29 +65,26 @@ class GameObject {
       if (dy < 0) { // top of this
         if (gameObject.vel.y < 0) return false;
         gameObject.pos.y = this.pos.y - gameObject.size.y;
-        gameObject.vel.y = 0;
-        gameObject.touchingGround = true;
+
+        if (this.type != GameObjectType.SCROLL) gameObject.vel.y = 0;
+        if (this.type != GameObjectType.SCROLL) gameObject.touchingGround = true;
 
         gameObjectCollision.BOTTOM = true; // bottom of gameObject
       }
       else { // bottom of this
         if (gameObject.vel.y > 0) return false;
         gameObject.pos.y = this.pos.y + this.size.y;
-        gameObject.vel.y = 0;
+
+        if (this.type != GameObjectType.SCROLL) gameObject.vel.y = 0;
 
         gameObjectCollision.TOP = true; // top of gameObject
       }
     }
 
-    // FIXME (SCROLL): This is currently not working to set the scroll amount for the non [. . ., false] fixed objects
-    // if (this.type == GameObjectType.SCROLL && gameObject.type == GameObjectType.PLAYER) {
-    //   if (gameObjectCollision.TOP || gameObjectCollision.BOTTOM) scrollAmount.Add(0, -vy);
-    //   if (gameObjectCollision.LEFT || gameObjectCollision.RIGHT) scrollAmount.Add(-vx, 0);
-    //   console.log('Scroll borders: ', gameObjectCollision);
-    //   console.log('Scroll amount: ', scrollAmount);
-    //   console.log('Player vy: ', vy);
-    //   console.log('Player vx: ', vx);
-    // }
+    if (this.type == GameObjectType.SCROLL && gameObject.type == GameObjectType.PLAYER) {
+      if (gameObjectCollision.TOP || gameObjectCollision.BOTTOM) scrollAmount.y -= vy;
+      if (gameObjectCollision.LEFT || gameObjectCollision.RIGHT) scrollAmount.x -= vx;
+    }
 
     this.isColliding = true;
     gameObject.isColliding = true;
@@ -98,9 +95,9 @@ class GameObject {
     this.isColliding = false;
     if (!this.fixed[0]) this.vel.y += Config.GRAVITY;
     if (!this.fixed[1]) {
-      this.pos.Add(scrollAmount);
+      if (this.type != GameObjectType.PLAYER && (scrollAmount.x != 0 || scrollAmount.y != 0)) this.scroll();
       if (this.touchingGround) {
-        this.vel.x *= 0.5;
+        this.vel.x *= 0.8;
       } else {
         this.vel.x *= 0.92;
       };
@@ -129,7 +126,8 @@ class GameObject {
   }
 
   scroll() {
-    // TODO (SCROLL): implement scrolling of non player game objects
+    this.pos.x += scrollAmount.x;
+    this.pos.y += scrollAmount.y;
   }
 }
 

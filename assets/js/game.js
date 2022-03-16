@@ -8,38 +8,43 @@ canvasBorders = [
   new SolidRect(new Vec2(0, canvas.height), new Vec2(canvas.width, 10), Config.DEBUG ? Colors.DEBUG_PINK : Colors.TRANSPARENT, [true, true])
 ];
 
-// scrollBorders = [
-//   new ScrollBorder(new Vec2(canvas.width / 2 - 200, canvas.height - 500), new Vec2(100, 500), [true, true]),
-//   new ScrollBorder(new Vec2(canvas.width / 2 + 100, canvas.height - 500), new Vec2(100, 500), [true, true]),
-//   new ScrollBorder(new Vec2(canvas.width / 2 - 200, canvas.height + 10), new Vec2(400, 100), [true, true]),
-//   new ScrollBorder(new Vec2(canvas.width / 2 - 200, canvas.height - 500), new Vec2(400, 100), [true, true])
-// ]
+scrollBorders = [
+  new ScrollBorder(new Vec2(canvas.width / 2 - 200, canvas.height - 500), new Vec2(100, 500), [true, true]),
+  new ScrollBorder(new Vec2(canvas.width / 2 + 100, canvas.height - 500), new Vec2(100, 500), [true, true]),
+  new ScrollBorder(new Vec2(canvas.width / 2 - 200, canvas.height - 70), new Vec2(400, 100), [true, true]),
+  new ScrollBorder(new Vec2(canvas.width / 2 - 200, canvas.height - 500), new Vec2(400, 100), [true, true])
+]
 
 gameWorld = [
-  new SolidRect(new Vec2(700, canvas.height - 100), new Vec2(100, 200), 'red', [true, false]),
+  new SolidRect(new Vec2(-20000, canvas.height - 100), new Vec2(40000, 100), 'blue', [true, false]),
+  new SolidRect(new Vec2(700, canvas.height - 200), new Vec2(100, 100), 'red', [true, false]),
 ];
 
 function begin() {
   pressedKeys.forEach((key) => {
     switch (key) {
+      case KEY.LEFT:
       case KEY.A:
-        player.vel.x += -5;
+        player.vel.x += -8;
         break;
+
+      case KEY.RIGHT:
       case KEY.D:
-        player.vel.x += 5;
+        player.vel.x += 8;
         break;
+
+      case KEY.UP:
+      case KEY.W:
       case KEY.SPACE:
-        if (player.touchingGround) {
-          player.vel.y = -12;
-        }
+        if (player.touchingGround) player.vel.y = -12;
         break;
+
       default:
         break;
     }
   });
-  player.vel.x = player.vel.x > 10 ? 10 : player.vel.x < -10 ? -10 : player.vel.x;
-  player.vel.y = player.vel.y > 20 ? 20 : player.vel.y < -15 ? -15 : player.vel.y;
-  gameWorld[0].pos.x += 1;
+  player.vel.x = player.vel.x > Config.MAX_VELOCITY.x ? Config.MAX_VELOCITY.x : player.vel.x < -Config.MAX_VELOCITY.x ? -Config.MAX_VELOCITY.x : player.vel.x;
+  player.vel.y = player.vel.y > Config.MAX_VELOCITY.y ? Config.MAX_VELOCITY.y : player.vel.y < -Config.MAX_VELOCITY.y ? -Config.MAX_VELOCITY.y : player.vel.y;
 }
 
 function collisionRunner() {

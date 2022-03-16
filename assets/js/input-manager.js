@@ -5,7 +5,6 @@ listener.register_combo({
   "keys": "a",
   "on_keydown": () => {
     pressedKeys.push(KEY.A);
-    pressedKeys = [... new Set(pressedKeys)];
   },
   "on_keyup": () => {
     player.setupSprite('idleL');
@@ -15,14 +14,13 @@ listener.register_combo({
 });
 
 listener.register_combo({
-  "keys": "left", // ! NOTE: This key is being treated as a duplicate of "a"
+  "keys": "left",
   "on_keydown": () => {
-    pressedKeys.push(KEY.A);
-    pressedKeys = [... new Set(pressedKeys)];
+    pressedKeys.push(KEY.LEFT);
   },
   "on_keyup": () => {
     player.setupSprite('idleL');
-    pressedKeys.indexOf(KEY.A) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.A), 1) : null;
+    pressedKeys.indexOf(KEY.LEFT) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.LEFT), 1) : null;
   },
   prevent_repeat: true
 });
@@ -34,7 +32,7 @@ listener.register_combo({
   "on_keydown": () => {
     pressedKeys.push(KEY.S);
     player.isCrouched = true;
-    pressedKeys = [... new Set(pressedKeys)];
+    // pressedKeys = [... new Set(pressedKeys)];
   },
   "on_keyup": () => {
     player.isCrouched = false;
@@ -44,15 +42,14 @@ listener.register_combo({
 });
 
 listener.register_combo({
-  "keys": "down", // ! NOTE: This key is being treated as a duplicate of "s"
+  "keys": "down",
   "on_keydown": () => {
-    pressedKeys.push(KEY.S);
+    pressedKeys.push(KEY.DOWN);
     player.isCrouched = true;
-    pressedKeys = [... new Set(pressedKeys)];
   },
   "on_keyup": () => {
     player.isCrouched = false;
-    pressedKeys.indexOf(KEY.S) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.S), 1) : null;
+    pressedKeys.indexOf(KEY.DOWN) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.DOWN), 1) : null;
   },
   prevent_repeat: true
 });
@@ -63,7 +60,6 @@ listener.register_combo({
   "keys": "d",
   "on_keydown": () => {
     pressedKeys.push(KEY.D);
-    pressedKeys = [... new Set(pressedKeys)];
   },
   "on_keyup": () => {
     player.setupSprite('idleR');
@@ -73,14 +69,13 @@ listener.register_combo({
 });
 
 listener.register_combo({
-  "keys": "right", // ! NOTE: This key is being treated as a duplicate of "d"
+  "keys": "right", 
   "on_keydown": () => {
-    pressedKeys.push(KEY.D);
-    pressedKeys = [... new Set(pressedKeys)];
+    pressedKeys.push(KEY.RIGHT);
   },
   "on_keyup": () => {
     player.setupSprite('idleR');
-    pressedKeys.indexOf(KEY.D) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.D), 1) : null;
+    pressedKeys.indexOf(KEY.RIGHT) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.RIGHT), 1) : null;
   },
   prevent_repeat: true
 });
@@ -91,7 +86,6 @@ listener.register_combo({
   "keys": "space",
   "on_keydown": () => {
     pressedKeys.push(KEY.SPACE);
-    pressedKeys = [... new Set(pressedKeys)];
   },
   "on_keyup": () => {
     pressedKeys.indexOf(KEY.SPACE) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.SPACE), 1) : null;
@@ -100,39 +94,53 @@ listener.register_combo({
 });
 
 listener.register_combo({
-  "keys": "w", // ! NOTE: This key is being treated as a duplicate of "space"
+  "keys": "w",
   "on_keydown": () => {
-    pressedKeys.push(KEY.SPACE);
-    pressedKeys = [... new Set(pressedKeys)];
+    pressedKeys.push(KEY.W);
   },
   "on_keyup": () => {
-    pressedKeys.indexOf(KEY.SPACE) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.SPACE), 1) : null;
+    pressedKeys.indexOf(KEY.W) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.W), 1) : null;
   },
   prevent_repeat: true
 });
 
 listener.register_combo({
-  "keys": "up", // ! NOTE: This key is being treated as a duplicate of "space"
+  "keys": "up",
   "on_keydown": () => {
-    pressedKeys.push(KEY.SPACE);
-    pressedKeys = [... new Set(pressedKeys)];
+    pressedKeys.push(KEY.UP);
   },
   "on_keyup": () => {
-    pressedKeys.indexOf(KEY.SPACE) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.SPACE), 1) : null;
+    pressedKeys.indexOf(KEY.UP) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.UP), 1) : null;
   },
   prevent_repeat: true
 });
 
 // RESET KEYS ------------------------------------------------------------
 listener.register_combo({
-  "keys": "r", // ! NOTE: This key is being treated as a duplicate of "space"
-  "on_keydown": () => {
-    pressedKeys.push(KEY.R);
-    pressedKeys = [... new Set(pressedKeys)];
-  },
+  "keys": "r",
   "on_keyup": () => {
     player.respawn();
-    pressedKeys.indexOf(KEY.R) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.R), 1) : null;
   },
-  prevent_repeat: true
+  prevent_repeat: true,
+  is_exclusive: true
+});
+
+// RESTART KEYS ------------------------------------------------------------
+listener.register_combo({
+  "keys": "ctrl r",
+  "on_keydown": () => {
+    document.location.reload();
+  },
+  prevent_repeat: true,
+  is_exclusive: true
+});
+
+listener.register_combo({
+  "keys": "ctrl shift r",
+  "on_keydown": () => {
+    document.location.reload(true);
+  },
+  prevent_repeat: true,
+  is_exclusive: true,
+  is_unordered: true
 });

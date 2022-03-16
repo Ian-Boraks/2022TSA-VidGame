@@ -1,3 +1,27 @@
+// * SHARED CLASSES --------------------------------------------------
+class Vec2 {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  Lerp(start = new Vec2(0, 0), end = new Vec2(0, 0), speed = 1) {
+    this.x = Lerp(start.x, end.x, speed);
+    this.y = Lerp(start.y, end.y, speed);
+  }
+
+  Add(vector) {
+    this.x += vector.x;
+    this.y += vector.y;
+  }
+
+  Zero() {
+    this.x = 0;
+    this.y = 0;
+  }
+}
+
+
 // * SHARED ENUMERATORS -----------------------------------------------
 const GameObjectType = {
   NONE: null,
@@ -41,36 +65,12 @@ const Colors = {
 
 const Config = {
   GRAVITY: .5,
-  MAX_VELOCITY: 2,
+  MAX_VELOCITY: new Vec2(10, 20),
   MIN_VELOCITY: .001,
-  DEBUG: true,
+  DEBUG: false,
   MAX_FPS: 60,
   RATIO_W: 1920,
   RATIO_H: 1080,
-}
-
-
-// * SHARED CLASSES --------------------------------------------------
-class Vec2 {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-  }
-
-  Lerp(start = new Vec2(0, 0), end = new Vec2(0, 0), speed = 1) {
-    this.x = Lerp(start.x, end.x, speed);
-    this.y = Lerp(start.y, end.y, speed);
-  }
-
-  Add(vector) {
-    this.x += vector.x;
-    this.y += vector.y;
-  }
-
-  Zero() {
-    this.x = 0;
-    this.y = 0;
-  }
 }
 
 
@@ -87,6 +87,7 @@ var canvasBorders = [];
 var gameWorld = [];
 
 var scrollAmount = new Vec2(0, 0);
+var zeroVector = new Vec2(0, 0);
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
