@@ -8,6 +8,7 @@ const GameObjectType = {
   TOKEN: 'Token',
   WATERFALL: 'Waterfall',
   TEXT: 'Text',
+  SCROLL: 'Scroll',
 };
 
 const KEY = {
@@ -33,7 +34,20 @@ const KEY = {
 
 const Colors = {
   TRANSPARENT: 'rgba(0, 0, 0, 0)',
+  OVERLAY: 'rgba(0, 0, 0, 0.6)',
+  DEBUG_GREY: 'rgba(128, 128, 128, .2)',
+  DEBUG_PINK: 'rgba(255, 0, 255, .2)',
 };
+
+const Config = {
+  GRAVITY: .5,
+  MAX_VELOCITY: 2,
+  MIN_VELOCITY: .001,
+  DEBUG: true,
+  MAX_FPS: 60,
+  RATIO_W: 1920,
+  RATIO_H: 1080,
+}
 
 
 // * SHARED CLASSES --------------------------------------------------
@@ -52,27 +66,27 @@ class Vec2 {
     this.x += vector.x;
     this.y += vector.y;
   }
+
+  Zero() {
+    this.x = 0;
+    this.y = 0;
+  }
 }
 
 
 // * SHARED VARIABLES -------------------------------------------------
-// TODO: Change ROOT once off of own domain
+// TODO (ROOT): Change ROOT once off of own domain
 var ROOT = window.location.pathname;
 ROOT = '/';
 
 var pressedKeys = [];
 
-const config = {
-  gravity: .5,
-  maxVelocity: 2,
-  minVelocity: .001,
-  debug: true,
-  maxFPS: 60,
-  defWidth: 1920,
-  defHeight: 1080,
-}
-
 var gameObjects = [];
+var scrollBorders = [];
+var canvasBorders = [];
+var gameWorld = [];
+
+var scrollAmount = new Vec2(0, 0);
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -108,12 +122,12 @@ $.getJSON(
 // * UTILITY LISTENERS ------------------------------------------------
 window.addEventListener('resize', () => {
   // This resizes the canvas to fit the window while maintaining the aspect ratio set in the config dictionary
-  let canvasScale = Math.min(innerWidth / config.defWidth, innerHeight / config.defHeight);
-  canvas.style.width = (canvas.width = Math.floor(config.defWidth * canvasScale)) + "px";
-  canvas.style.height = (canvas.height = Math.floor(config.defHeight * canvasScale)) + "px";
+  let canvasScale = Math.min(innerWidth / Config.RATIO_W, innerHeight / Config.RATIO_H);
+  canvas.style.width = (canvas.width = Math.floor(Config.RATIO_W * canvasScale)) + "px";
+  canvas.style.height = (canvas.height = Math.floor(Config.RATIO_H * canvasScale)) + "px";
 
-  canvas.width = config.defWidth;
-  canvas.height = config.defHeight;
+  canvas.width = Config.RATIO_W;
+  canvas.height = Config.RATIO_H;
 
   // After the canvas is resized, this re-draws the canvas elements
   ctx.clearRect(0, 0, canvas.width, canvas.height);

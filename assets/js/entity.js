@@ -1,9 +1,15 @@
 class GameObject {
-  constructor(pos = new Vec2(0, 0), size = new Vec2(0, 0), fixed = true, draw = true) {
+  constructor(
+    pos = new Vec2(0, 0),
+    size = new Vec2(0, 0),
+    fixed = [true, false], // [noGravity, noScroll]
+    draw = true
+  ) {
     this.pos = pos;
     this.size = size;
     this.drawEnabled = draw;
     this.fixed = fixed;
+    this.touchingGround = false;
 
     this.drawType = null;
     this.vel = new Vec2(0, 0);
@@ -16,12 +22,15 @@ class GameObject {
   }
 
   collideRectangle(gameObject) {
-    let collision = {
-      top: false,
-      bottom: false,
-      left: false,
-      right: false
+    let gameObjectCollision = {
+      TOP: false,
+      BOTTOM: false,
+      LEFT: false,
+      RIGHT: false
     }
+
+    let vx = gameObject.vel.x;
+    let vy = gameObject.vel.y;
 
     let dx = gameObject.center.x - this.center.x;// x difference between centers
     let dy = gameObject.center.y - this.center.y;// y difference between centers
@@ -36,39 +45,49 @@ class GameObject {
     To do that, we divide dx and dy by it's width and height respectively. */
     if (Math.abs(dx / this.size.x) > Math.abs(dy / this.size.y)) {
 
-      if (dx < 0) { // left
+      if (dx < 0) { // left of this
         if (gameObject.vel.x < 0) return false;
         gameObject.pos.x = this.pos.x - gameObject.size.x;
         gameObject.vel.x = 0;
 
-        collision.left = true;
+        gameObjectCollision.RIGHT = true; // right of gameObject
       }
-      else { // right
+      else { // right of this
         if (gameObject.vel.x > 0) return false;
         gameObject.pos.x = this.pos.x + this.size.x;
         gameObject.vel.x = 0;
 
-        collision.right = true;
+        gameObjectCollision.LEFT = true; // left of gameObject
       }
 
     } else {
 
-      if (dy < 0) { // top
+      if (dy < 0) { // top of this
         if (gameObject.vel.y < 0) return false;
         gameObject.pos.y = this.pos.y - gameObject.size.y;
         gameObject.vel.y = 0;
         gameObject.touchingGround = true;
 
-        collision.top = true;
+        gameObjectCollision.BOTTOM = true; // bottom of gameObject
       }
-      else { // bottom
+      else { // bottom of this
         if (gameObject.vel.y > 0) return false;
         gameObject.pos.y = this.pos.y + this.size.y;
         gameObject.vel.y = 0;
 
-        collision.bottom = true;
+        gameObjectCollision.TOP = true; // top of gameObject
       }
     }
+
+    // FIXME (SCROLL): This is currently not working to set the scroll amount for the non [. . ., false] fixed objects
+    // if (this.type == GameObjectType.SCROLL && gameObject.type == GameObjectType.PLAYER) {
+    //   if (gameObjectCollision.TOP || gameObjectCollision.BOTTOM) scrollAmount.Add(0, -vy);
+    //   if (gameObjectCollision.LEFT || gameObjectCollision.RIGHT) scrollAmount.Add(-vx, 0);
+    //   console.log('Scroll borders: ', gameObjectCollision);
+    //   console.log('Scroll amount: ', scrollAmount);
+    //   console.log('Player vy: ', vy);
+    //   console.log('Player vx: ', vx);
+    // }
 
     this.isColliding = true;
     gameObject.isColliding = true;
@@ -77,8 +96,17 @@ class GameObject {
 
   update() {
     this.isColliding = false;
-    if (!this.fixed) this.vel.y += config.gravity;
+    if (!this.fixed[0]) this.vel.y += Config.GRAVITY;
+    if (!this.fixed[1]) {
+      this.pos.Add(scrollAmount);
+      if (this.touchingGround) {
+        this.vel.x *= 0.5;
+      } else {
+        this.vel.x *= 0.92;
+      };
+    }
     this.center = new Vec2(this.pos.x + this.size.x / 2, this.pos.y + this.size.y / 2);
+    this.touchingGround = false;
   }
 
   draw() {
@@ -87,7 +115,7 @@ class GameObject {
     switch (this.drawType) {
       case 'rect':
         ctx.beginPath();
-        ctx.fillStyle = this.isColliding ? 'pink' : this.color;
+        ctx.fillStyle = (this.isColliding && Config.DEBUG) ? Colors.DEBUG_PINK : this.color;
         ctx.fillRect(this.pos.x, this.pos.y, this.size.x, this.size.y);
         ctx.closePath();
         break;
@@ -101,7 +129,7 @@ class GameObject {
   }
 
   scroll() {
-
+    // TODO (SCROLL): implement scrolling of non player game objects
   }
 }
 
@@ -113,7 +141,7 @@ class SolidRect extends GameObject {
     this.type = GameObjectType.SOLID;
     this.drawType = 'rect';
 
-    super.draw()
+    super.draw();
   }
 }
 
@@ -126,7 +154,7 @@ class SolidSprite extends GameObject {
     this.type = GameObjectType.SOLID;
 
     this.setupSprite();
-    super.draw()
+    super.draw();
   }
 
   setupSprite() {
@@ -149,9 +177,9 @@ class BackgroundRect extends SolidRect {
 
   draw() {
     if (!this.drawEnabled) return;
-    super.draw()
+    super.draw();
     ctx.beginPath();
-    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillStyle = Colors.OVERLAY;
     ctx.fillRect(this.pos.x, this.pos.y, this.size.x, this.size.y);
     ctx.closePath();
   }
@@ -166,10 +194,22 @@ class BackgroundSprite extends SolidSprite {
 
   draw() {
     if (!this.drawEnabled) return;
-    super.draw()
+    super.draw();
     ctx.beginPath();
-    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillStyle = Colors.OVERLAY;
     ctx.fillRect(this.pos.x, this.pos.y, this.size.x, this.size.y);
     ctx.closePath();
+  }
+}
+
+class ScrollBorder extends GameObject {
+  constructor(pos = new Vec2(0, 0), size = new Vec2(0, 0), fixed = true, draw = true) {
+    super(pos, size, fixed, draw);
+
+    this.color = Config.DEBUG ? Colors.DEBUG_GREY : Colors.TRANSPARENT;
+    this.type = GameObjectType.SCROLL;
+    this.drawType = 'rect';
+
+    super.draw();
   }
 }

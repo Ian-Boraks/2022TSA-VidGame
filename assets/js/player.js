@@ -1,28 +1,37 @@
 class Player extends GameObject {
   constructor(pos, size = new Vec2(100, 200), draw = true) {
-    super(pos, size, false, draw);
+    super(pos, size, [false, false], draw);
+
+    this.initPos = new Vec2(_.clone(pos.x), _.clone(pos.y));
 
     this.touchingGround = false;
+    this.isCrouched = false;
     this.spriteName = 'player';
     this.drawType = 'sprite';
     this.vel = new Vec2(0, 0);
     this.type = GameObjectType.PLAYER;
-    this.fixed = false;
+    this.fixed = [false, false];
 
     this.setupSprite();
   }
 
+  respawn() {
+    // ? NOTE: I hate that I have to do _.clone() to make sure i don't get any reference errors
+    this.pos = new Vec2(_.clone(this.initPos.x), _.clone(this.initPos.y));
+  }
+
   update() {
-    if (this.touchingGround) this.vel.x *= 0.9;
+    // FIXME (CROUCH): Crouch happens with a fixed point at the top of the player instead of the bottom
+    this.size.y = this.isCrouched ? 100 : 200;
     super.update();
   }
 
   draw() {
     if (!this.drawEnabled) return;
     super.draw()
-    if (config.debug) {
+    if (Config.DEBUG) {
       ctx.beginPath();
-      ctx.fillStyle = this.isColliding ? "rgba(255, 10, 255, 0.2)" : "rgba(255, 255, 255, 0.2)";
+      ctx.fillStyle = (this.isColliding ? Colors.DEBUG_PINK : Colors.DEBUG_GREY);
       ctx.fillRect(this.pos.x, this.pos.y, this.size.x, this.size.y);
       ctx.closePath();
     }
