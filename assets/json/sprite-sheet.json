@@ -43,35 +43,5 @@
 			"sWidth": 100,
 			"sHeight": 196
 		}
-	},
-	"stone": {
-		"img": "assets/img/Stone.png",
-		"idle": {
-			"frames": 1,
-			"sx": 0,
-			"sy": 0,
-			"sWidth": 100,
-			"sHeight": 100
-		}
-	},
-	"trap": {
-		"img": "assets/img/trap.png",
-		"idle": {
-			"frames": 499,
-			"sx": 0,
-			"sy": 0,
-			"sWidth": 998,
-			"sHeight": 754
-		}
-	},
-	"backgroundImg": {
-		"img": "assets/img/background1.jpg",
-		"idle": {
-			"frames": 10980,
-			"sx": 5490,
-			"sy": 100,
-			"sWidth": 2745,
-			"sHeight": 760
-		}
 	}
 }

@@ -65,7 +65,7 @@ const Config = {
   GRAVITY: .5,
   MAX_VELOCITY: new Vec2(10, 20),
   MIN_VELOCITY: .001,
-  DEBUG: false,
+  DEBUG: true,
   DEF_ANIMATION_SPEED: 10,
   MAX_FPS: 60,
   RATIO_W: 1920,

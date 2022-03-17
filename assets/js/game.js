@@ -10,7 +10,7 @@ gameWorld = [
   new SolidRect(new Vec2(700, canvas.height - 200), new Vec2(100, 100), 'red', [true, false]),
 ];
 
-function begin() {
+function inputRunner() {
   pressedKeys.forEach((key) => {
     switch (key) {
       case KEY.LEFT:
@@ -23,6 +23,11 @@ function begin() {
         player.vel.x += 8;
         break;
 
+      case KEY.DOWN:
+      case KEY.S:
+        // ! NOTE: player.crouch() is called in the listener.register_combo() function/s in input-manager.js (DOWN KEYS)
+        break;
+
       case KEY.UP:
       case KEY.W:
       case KEY.SPACE:
@@ -33,6 +38,11 @@ function begin() {
         break;
     }
   });
+}
+
+function begin() {
+  inputRunner();
+
   player.vel.x = player.vel.x > Config.MAX_VELOCITY.x ? Config.MAX_VELOCITY.x : player.vel.x < -Config.MAX_VELOCITY.x ? -Config.MAX_VELOCITY.x : player.vel.x;
   player.vel.y = player.vel.y > Config.MAX_VELOCITY.y ? Config.MAX_VELOCITY.y : player.vel.y < -Config.MAX_VELOCITY.y ? -Config.MAX_VELOCITY.y : player.vel.y;
 }

@@ -49,12 +49,10 @@ listener.register_combo({
   "on_keydown": () => {
     pressedKeys.push(KEY.DOWN);
     player.crouch(true);
-    player.isCrouched = true;
   },
   "on_keyup": () => {
     pressedKeys.indexOf(KEY.DOWN) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.DOWN), 1) : null;
     player.crouch(false);
-    player.isCrouched = false;
   },
   prevent_repeat: true
 });
