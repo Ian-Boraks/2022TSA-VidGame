@@ -1,19 +1,9 @@
 // ! PLAYER NEEDS TO BE FIRST IN THE gameObjects ARRAY
 var player = new Player(new Vec2(canvas.width / 2 - 50, canvas.height - 300));
 
-canvasBorders = [
-  new SolidRect(new Vec2(-10, 0), new Vec2(10, canvas.height), Config.DEBUG ? Colors.DEBUG_PINK : Colors.TRANSPARENT, [true, true]),
-  new SolidRect(new Vec2(canvas.width, 0), new Vec2(10, canvas.height), Config.DEBUG ? Colors.DEBUG_PINK : Colors.TRANSPARENT, [true, true]),
-  new SolidRect(new Vec2(0, canvas.height), new Vec2(canvas.width, 10), Config.DEBUG ? Colors.DEBUG_PINK : Colors.TRANSPARENT, [true, true]),
-  new SolidRect(new Vec2(0, canvas.height), new Vec2(canvas.width, 10), Config.DEBUG ? Colors.DEBUG_PINK : Colors.TRANSPARENT, [true, true])
-];
-
-scrollBorders = [
-  new ScrollBorder(new Vec2(canvas.width / 2 - 200, canvas.height - 500), new Vec2(100, 500), [true, true]),
-  new ScrollBorder(new Vec2(canvas.width / 2 + 100, canvas.height - 500), new Vec2(100, 500), [true, true]),
-  new ScrollBorder(new Vec2(canvas.width / 2 - 200, canvas.height - 70), new Vec2(400, 100), [true, true]),
-  new ScrollBorder(new Vec2(canvas.width / 2 - 200, canvas.height - 500), new Vec2(400, 100), [true, true])
-]
+map.def.forEach(GO => {
+  createGO(GO);
+});
 
 gameWorld = [
   new SolidRect(new Vec2(-20000, canvas.height - 100), new Vec2(40000, 100), 'blue', [true, false]),
@@ -67,6 +57,7 @@ function collisionRunner() {
 }
 
 function update() {
+  gameWorld[1].pos.x += 1;
   gameObjects.forEach((gameObject) => {
     gameObject.update(gameObject);
   });

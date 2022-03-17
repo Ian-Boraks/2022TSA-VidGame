@@ -31,12 +31,11 @@ listener.register_combo({
   "keys": "s",
   "on_keydown": () => {
     pressedKeys.push(KEY.S);
-    player.isCrouched = true;
-    // pressedKeys = [... new Set(pressedKeys)];
+    player.crouch(true);
   },
   "on_keyup": () => {
-    player.isCrouched = false;
     pressedKeys.indexOf(KEY.S) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.S), 1) : null;
+    player.crouch(false);
   },
   prevent_repeat: true
 });
@@ -45,11 +44,13 @@ listener.register_combo({
   "keys": "down",
   "on_keydown": () => {
     pressedKeys.push(KEY.DOWN);
+    player.crouch(true);
     player.isCrouched = true;
   },
   "on_keyup": () => {
-    player.isCrouched = false;
     pressedKeys.indexOf(KEY.DOWN) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.DOWN), 1) : null;
+    player.crouch(false);
+    player.isCrouched = false;
   },
   prevent_repeat: true
 });

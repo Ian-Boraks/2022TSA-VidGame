@@ -57,6 +57,8 @@ const KEY = {
 };
 
 const Colors = {
+  BLUE: 'blue',
+  RED: 'red',
   TRANSPARENT: 'rgba(0, 0, 0, 0)',
   OVERLAY: 'rgba(0, 0, 0, 0.6)',
   DEBUG_GREY: 'rgba(128, 128, 128, .2)',
@@ -67,7 +69,7 @@ const Config = {
   GRAVITY: .5,
   MAX_VELOCITY: new Vec2(10, 20),
   MIN_VELOCITY: .001,
-  DEBUG: false,
+  DEBUG: true,
   MAX_FPS: 60,
   RATIO_W: 1920,
   RATIO_H: 1080,
@@ -83,7 +85,6 @@ var pressedKeys = [];
 
 var gameObjects = [];
 var scrollBorders = [];
-var canvasBorders = [];
 var gameWorld = [];
 
 var scrollAmount = new Vec2(0, 0);
@@ -147,31 +148,6 @@ $(window).blur(function () { MainLoop.stop(); });
 // * UTILITY FUNCTIONS ------------------------------------------------
 const noop = () => { /* No operation function */ }
 
-const rectIntersect = (obj1, obj2) => {
-  // collisionTypes = {
-  //   rightCollision: false,
-  //   leftCollision: false,
-  //   topCollision: false,
-  //   bottomCollision: false,
-  // }
-
-  let x1 = obj1.pos.x;
-  let y1 = obj1.pos.y;
-  let w1 = obj1.w;
-  let h1 = obj1.h;
-
-  let x2 = obj2.pos.x;
-  let y2 = obj2.pos.y;
-  let w2 = obj2.w;
-  let h2 = obj2.h;
-
-  // Check x and y for overlap
-  if (x2 > w1 + x1 || x1 > w2 + x2 || y2 > h1 + y1 || y1 > h2 + y2) {
-    return false;
-  }
-  return true;
-}
-
 const updateClipboard = (newClip) => {
   navigator.clipboard.writeText(newClip).then(function () {
     /* clipboard successfully set */
@@ -206,4 +182,38 @@ const getRandom = (min, max) => {
   min = Math.ceil(min);
   max = Math.floor(max);
   return Math.random() * (max - min) + min; //The maximum is exclusive and the minimum is inclusive
+}
+
+const createGO = (GO) => {
+  let tempGO;
+  switch (GO.class) {
+    case "SolidRect":
+      tempGO = new SolidRect(
+        new Vec2(eval(GO.pos[0]), eval(GO.pos[1])),
+        new Vec2(eval(GO.size[0]), eval(GO.size[1])),
+        eval(GO.color),
+        GO.fixed
+      );
+      break;
+    case "ScrollBorder":
+      tempGO = new ScrollBorder(
+        new Vec2(eval(GO.pos[0]), eval(GO.pos[1])),
+        new Vec2(eval(GO.size[0]), eval(GO.size[1])),
+        GO.fixed
+      );
+      scrollBorders.push(tempGO);
+      break;
+    case "BackgroundRect":
+      tempGO = new BackgroundRect(
+        new Vec2(eval(GO.pos[0]), eval(GO.pos[1])),
+        new Vec2(eval(GO.size[0]), eval(GO.size[1])),
+        eval(GO.color),
+        GO.fixed
+      );
+      break;
+    default:
+      console.error(`${GO.class} is not a valid class`);
+      break;
+  }
+  return;
 }

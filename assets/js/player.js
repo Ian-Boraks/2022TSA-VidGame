@@ -15,14 +15,18 @@ class Player extends GameObject {
     this.setupSprite();
   }
 
+  crouch(crouched) {
+    this.isCrouched = crouched;
+    this.pos.y += crouched ? 100 : -100;
+    this.size.y = this.isCrouched ? 100 : 200;
+  }
+
   respawn() {
     // ? NOTE: I hate that I have to do _.clone() to make sure i don't get any reference errors
     this.pos = new Vec2(_.clone(this.initPos.x), _.clone(this.initPos.y));
   }
 
   update() {
-    // FIXME (CROUCH): Crouch happens with a fixed point at the top of the player instead of the bottom
-    this.size.y = this.isCrouched ? 100 : 200;
     super.update();
   }
 

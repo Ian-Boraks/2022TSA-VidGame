@@ -1,52 +1,44 @@
 {
-	"init": [
+	"def": [
 		{
-			"width": 99.79426096372481,
-			"height": 972.9355149181904,
-			"initPosx": 1185.329669734705,
-			"initPosy": 287.0354186717998,
-			"styles": ["img", "solid_brick", "idle"],
-			"types": ["solid"]
+			"class": "ScrollBorder",
+			"pos": ["canvas.width / 2 - 200", "canvas.height - 500"],
+			"size": [100, 500],
+			"fixed": [true, true]
 		},
 		{
-			"width": 38.982133188955004,
-			"height": 1225.524542829644,
-			"initPosx": 1604.7774228478615,
-			"initPosy": 39.12396535129926,
-			"styles": ["img", "solid_brick", "idle"],
-			"types": ["solid"]
+			"class": "ScrollBorder",
+			"pos": ["canvas.width / 2 + 100", "canvas.height - 500"],
+			"size": [100, 500],
+			"fixed": [true, true]
 		},
 		{
-			"width": 28.067135896047603,
-			"height": 972.9355149181904,
-			"initPosx": 1155.7032485110992,
-			"initPosy": 287.0354186717998,
-			"styles": ["draw", "#2370db"],
-			"types": ["ladder"]
+			"class": "ScrollBorder",
+			"pos": ["canvas.width / 2 - 200", "canvas.height - 70"],
+			"size": [400, 100],
+			"fixed": [true, true]
+		},
+		{ 
+			"class": "ScrollBorder",
+			"pos": ["canvas.width / 2 - 200", "canvas.height - 600"],
+			"size": [400, 100],
+			"fixed": [true, true]
 		},
 		{
-			"width": 753.1348132106116,
-			"height": 221.40519730510096,
-			"initPosx": 1643.7595560368165,
-			"initPosy": 1044.6653416746872,
-			"styles": ["img", "solid_brick", "idle"],
-			"types": ["solid"]
-		},
+			"class": "SolidRect",
+			"pos": [-20000, "canvas.height - 100"],
+			"size": [40000, 100],
+			"color": "Colors.BLUE",
+			"fixed": [true, false]
+		}
+	],
+	"test": [
 		{
-			"width": 50,
-			"height": 100,
-			"initPosx": 600,
-			"initPosy": 300,
-			"styles": ["draw", "#42f5a1"],
-			"types": ["token"]
-		},
-		{
-			"width": 50,
-			"height": 100,
-			"initPosx": 800,
-			"initPosy": 300,
-			"styles": ["img", "trap", "idle"],
-			"types": ["trap"]
+			"class": "SolidRect",
+			"pos": [700, "canvas.height - 200"],
+			"size": [100, 100],
+			"color": "Colors.RED",
+			"fixed": [true, false]
 		}
 	]
 }
