@@ -29,7 +29,6 @@ class Player extends GameObject {
   }
 
   update() {
-    // FIXME: SOmetimes the animation switches very fast while jumping
     switch (this.animation) {
       case 'walkL':
         if (this.vel.y > Config.GRAVITY * 2 || this.vel.y < -Config.GRAVITY * 2) {
@@ -39,9 +38,9 @@ class Player extends GameObject {
       case 'jumpL':
         if (this.vel.x > 0) {
           this.switchAnimation('jumpR');
-        } else if (this.vel.x == 0 && this.animation != 'idleL') {
+        } else if (this.vel.x == 0 && this.animation != 'idleL' && this.touchingGround) {
           this.switchAnimation('idleL');
-        } else { }
+        } else if (this.touchingGround && this.animation == 'jumpL') { this.switchAnimation('idleL'); }
         break;
 
       case 'walkR':
@@ -52,9 +51,9 @@ class Player extends GameObject {
       case 'jumpR':
         if (this.vel.x < 0) {
           this.switchAnimation('jumpL');
-        } else if (this.vel.x == 0 && this.animation != 'idleR') {
+        } else if (this.vel.x == 0 && this.animation != 'idleR' && this.touchingGround) {
           this.switchAnimation('idleR');
-        } else { }
+        } else if (this.touchingGround && this.animation == 'jumpR') { this.switchAnimation('idleR'); }
         break;
 
       case 'idleL':

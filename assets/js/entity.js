@@ -5,7 +5,7 @@ class GameObject {
     fixed = [true, false], // [noGravity, noScroll]
     draw = true
   ) {
-    this.animationSpeed = Config.ANIMATION_SPEED;
+    this.animationSpeed = Config.DEF_ANIMATION_SPEED;
     this.animationSubStep = 0;
     this.currentFrame = 1;
 
@@ -28,11 +28,12 @@ class GameObject {
   animate() {
     if (this.frames <= 1) return;
     this.animationSubStep++;
-    if (this.animationSubStep > Config.ANIMATION_SPEED) {
-      this.animationSubStep = 0;
+    if (this.animationSubStep > this.animationSpeed) {
       this.currentFrame++;
       if (this.currentFrame > this.frames) this.currentFrame = 1;
       this.sx = (this.currentFrame - 1) * 100;
+
+      this.animationSubStep = 0;
     }
   }
 
@@ -167,6 +168,7 @@ class SolidRect extends GameObject {
 }
 
 class SolidSprite extends GameObject {
+  // TODO: REMOVE THESE AS EVERYTHING SHOULD HAVE SPRITES
   constructor(pos = new Vec2(0, 0), size = new Vec2(0, 0), spriteName = 'stone', fixed = true, draw = true) {
     super(pos, size, fixed, draw);
 
@@ -195,6 +197,7 @@ class SolidSprite extends GameObject {
 }
 
 class BackgroundRect extends SolidRect {
+  // TODO: REMOVE THESE AS EVERYTHING SHOULD HAVE SPRITES
   constructor(pos = new Vec2(0, 0), size = new Vec2(0, 0), color = 'pink', fixed = true, draw = true) {
     super(pos, size, color, fixed, draw);
 

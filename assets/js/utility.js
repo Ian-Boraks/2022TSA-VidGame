@@ -66,7 +66,7 @@ const Config = {
   MAX_VELOCITY: new Vec2(10, 20),
   MIN_VELOCITY: .001,
   DEBUG: false,
-  ANIMATION_SPEED: 10,
+  DEF_ANIMATION_SPEED: 10,
   MAX_FPS: 60,
   RATIO_W: 1920,
   RATIO_H: 1080,
