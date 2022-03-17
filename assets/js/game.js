@@ -60,7 +60,7 @@ function update() {
   gameObjects.forEach((gameObject) => {
     gameObject.update(gameObject);
   });
-  scrollAmount.Zero();
+  scrollAmount = new Vec2(0, 0)
   collisionRunner();
 };
 

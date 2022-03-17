@@ -22,8 +22,10 @@ class Player extends GameObject {
   }
 
   respawn() {
-    // ? NOTE: I hate that I have to do _.clone() to make sure i don't get any reference errors
+    // ? NOTE: I am doing _.clone() to make sure I don't get any reference errors
     this.pos = new Vec2(_.clone(this.initPos.x), _.clone(this.initPos.y));
+    scrollAmount = new Vec2(-scrollTotal.x, -scrollTotal.y);
+    scrollTotal = new Vec2(0, 0);
   }
 
   update() {
@@ -58,7 +60,9 @@ class Player extends GameObject {
       case 'idleL':
       case 'idleR':
         if (this.vel.x != 0) this.switchAnimation('walk' + (this.vel.x > 0 ? 'R' : 'L'));
-        if (this.vel.y > Config.GRAVITY * 2 || this.vel.y < -Config.GRAVITY * 2) this.switchAnimation('jump' + ((this.animation.includes('R') || this.vel.x > 0) ? 'R' : 'L'));
+        if (
+          (this.vel.y > Config.GRAVITY * 2 || this.vel.y < -Config.GRAVITY * 2)
+        ) this.switchAnimation('jump' + ((this.animation.includes('R') || this.vel.x > 0) ? 'R' : 'L'));
         break;
     }
     super.update();

@@ -1,5 +1,6 @@
 // * SHARED CLASSES --------------------------------------------------
 class Vec2 {
+
   constructor(x, y) {
     this.x = x;
     this.y = y;
@@ -13,11 +14,6 @@ class Vec2 {
   Add(vector) {
     this.x += vector.x;
     this.y += vector.y;
-  }
-
-  Zero() {
-    this.x = 0;
-    this.y = 0;
   }
 }
 
@@ -89,7 +85,7 @@ var scrollBorders = [];
 var gameWorld = [];
 
 var scrollAmount = new Vec2(0, 0);
-var zeroVector = new Vec2(0, 0);
+var scrollTotal = new Vec2(0, 0);
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -120,6 +116,63 @@ $.getJSON(
     }
   }
 )
+
+
+// * SOUND FUNCTIONS --------------------------------------------------
+soundManager.setup({
+  debugMode: false
+});
+soundManager.defaultOptions = {
+  autoLoad: true,
+}
+soundManager.onready(function () {
+  // ! All sound effects need to be loaded with this function before they can be played
+  // Music: https://www.chosic.com/free-music/all/
+  soundManager.createSound({
+    id: 'backgroundMusic',
+    url: ROOT + 'assets/sound/CHIPTUNE_The_Old_Tower_Inn.mp3',
+    onfinish: function () { playSound('backgroundMusic1'); },
+    volume: 70
+  });
+  soundManager.createSound({
+    id: 'backgroundMusic1',
+    url: ROOT + 'assets/sound/CHIPTUNE_Minstrel_Dance.mp3',
+    onfinish: function () { setTimeout(() => { playSound('backgroundMusic2'); }, 2000) },
+    volume: 70
+  });
+  soundManager.createSound({
+    id: 'backgroundMusic2',
+    url: ROOT + 'assets/sound/CHIPTUNE_The_Bards_Tale.mp3',
+    onfinish: function () { setTimeout(() => { playSound('backgroundMusic'); }, 2000) },
+    volume: 70
+  });
+  soundManager.createSound({
+    id: 'trombone',
+    url: ROOT + 'assets/sound/FX68GWY-funny-trombone-slide-accent.mp3',
+    autoLoad: false,
+  });
+  soundManager.createSound({
+    id: 'pickUp',
+    url: ROOT + 'assets/sound/mixkit-arcade-mechanical-bling-210.wav',
+    volume: 50
+  });
+  soundManager.createSound({
+    id: 'jump',
+    url: ROOT + 'assets/sound/mixkit-player-jumping-in-a-video-game-2043.wav',
+    volume: 30
+  });
+  soundManager.createSound({
+    id: 'wallJump',
+    url: ROOT + 'assets/sound/mixkit-video-game-spin-jump-2648.wav',
+    volume: 50,
+    autoLoad: false
+  });
+  soundManager.createSound({
+    id: 'death',
+    url: ROOT + 'assets/sound/163442__under7dude__man-dying.wav',
+    volume: 100,
+  });
+});
 
 
 // * UTILITY LISTENERS ------------------------------------------------

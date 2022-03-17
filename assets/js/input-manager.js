@@ -1,3 +1,5 @@
+// TODO: Make this all in vanilla JS so the library can be removed and performance can be improved.
+
 var listener = new window.keypress.Listener();
 
 // UP KEYS -------------------------------------------------------------

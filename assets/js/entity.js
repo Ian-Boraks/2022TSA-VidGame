@@ -105,6 +105,7 @@ class GameObject {
     if (this.type == GameObjectType.SCROLL && gameObject.type == GameObjectType.PLAYER) {
       if (gameObjectCollision.TOP || gameObjectCollision.BOTTOM) scrollAmount.y -= vy;
       if (gameObjectCollision.LEFT || gameObjectCollision.RIGHT) scrollAmount.x -= vx;
+      scrollTotal.Add(scrollAmount);
     }
 
     this.isColliding = true;
