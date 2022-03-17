@@ -12,7 +12,7 @@ class Player extends GameObject {
     this.type = GameObjectType.PLAYER;
     this.fixed = [false, false];
 
-    this.setupSprite();
+    this.setupSprite(true);
   }
 
   crouch(crouched) {
@@ -27,8 +27,43 @@ class Player extends GameObject {
   }
 
   update() {
+    // FIXME: SOmetimes the animation switches very fast while jumping
+    switch (this.animation) {
+      case 'walkL':
+        if (this.vel.y > Config.GRAVITY * 2 || this.vel.y < -Config.GRAVITY * 2) {
+          this.switchAnimation('jumpL');
+          break;
+        };
+      case 'jumpL':
+        if (this.vel.x > 0) {
+          this.switchAnimation('jumpR');
+        } else if (this.vel.x == 0 && this.animation != 'idleL') {
+          this.switchAnimation('idleL');
+        } else { }
+        break;
+
+      case 'walkR':
+        if (this.vel.y > Config.GRAVITY * 2 || this.vel.y < -Config.GRAVITY * 2) {
+          this.switchAnimation('jumpR');
+          break;
+        };
+      case 'jumpR':
+        if (this.vel.x < 0) {
+          this.switchAnimation('jumpL');
+        } else if (this.vel.x == 0 && this.animation != 'idleR') {
+          this.switchAnimation('idleR');
+        } else { }
+        break;
+
+      case 'idleL':
+      case 'idleR':
+        if (this.vel.x != 0) this.switchAnimation('walk' + (this.vel.x > 0 ? 'R' : 'L'));
+        if (this.vel.y > Config.GRAVITY * 2 || this.vel.y < -Config.GRAVITY * 2) this.switchAnimation('jump' + ((this.animation.includes('R') || this.vel.x > 0) ? 'R' : 'L'));
+        break;
+    }
     super.update();
   }
+
 
   draw() {
     if (!this.drawEnabled) return;
@@ -41,10 +76,15 @@ class Player extends GameObject {
     }
   }
 
-  setupSprite(animationName = 'idleR') {
-    this.img = new Image();
-    this.img.src = ROOT + spriteSheets[this.spriteName]["img"];
+  setupSprite(firstTime = false, animationName = 'idleR') {
+    if (firstTime) {
+      this.img = new Image();
+      this.img.src = ROOT + spriteSheets[this.spriteName]["img"];
+    }
+
     this.animation = animationName;
+    this.currentFrame = 1;
+    this.frames = spriteSheets[this.spriteName][this.animation]["frames"];
     this.sx = spriteSheets[this.spriteName][this.animation]["sx"];
     this.sy = spriteSheets[this.spriteName][this.animation]["sy"];
     this.sw = spriteSheets[this.spriteName][this.animation]["sWidth"];

@@ -57,7 +57,6 @@ function collisionRunner() {
 }
 
 function update() {
-  gameWorld[1].pos.x += 1;
   gameObjects.forEach((gameObject) => {
     gameObject.update(gameObject);
   });

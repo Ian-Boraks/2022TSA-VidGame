@@ -5,6 +5,10 @@ class GameObject {
     fixed = [true, false], // [noGravity, noScroll]
     draw = true
   ) {
+    this.animationSpeed = Config.ANIMATION_SPEED;
+    this.animationSubStep = 0;
+    this.currentFrame = 1;
+
     this.pos = pos;
     this.size = size;
     this.drawEnabled = draw;
@@ -21,7 +25,24 @@ class GameObject {
 
   }
 
+  animate() {
+    if (this.frames <= 1) return;
+    this.animationSubStep++;
+    if (this.animationSubStep > Config.ANIMATION_SPEED) {
+      this.animationSubStep = 0;
+      this.currentFrame++;
+      if (this.currentFrame > this.frames) this.currentFrame = 1;
+      this.sx = (this.currentFrame - 1) * 100;
+    }
+  }
+
+  switchAnimation(animationName) {
+    if (this.drawType != 'sprite') { console.error('Entity is not a sprite, can not switch animation'); return; }
+    this.setupSprite(false, animationName);
+  }
+
   collideRectangle(gameObject) {
+    // TODO: Add proper collision for player being moved by fixed objects
     let gameObjectCollision = {
       TOP: false,
       BOTTOM: false,
@@ -117,6 +138,7 @@ class GameObject {
         ctx.closePath();
         break;
       case 'sprite':
+        this.animate();
         ctx.drawImage(this.img, this.sx, this.sy, this.sw, this.sh, this.pos.x, this.pos.y, this.size.x, this.size.y);
         break;
       default:
@@ -151,14 +173,19 @@ class SolidSprite extends GameObject {
     this.drawType = 'sprite';
     this.type = GameObjectType.SOLID;
 
-    this.setupSprite();
+    this.setupSprite(true);
     super.draw();
   }
 
-  setupSprite() {
-    this.img = new Image();
-    this.img.src = ROOT + spriteSheets[this.spriteName]["img"];
-    this.animation = 'idle';
+  setupSprite(firstTime = false, animationName = 'idle') {
+    if (firstTime) {
+      this.img = new Image();
+      this.img.src = ROOT + spriteSheets[this.spriteName]["img"];
+    }
+
+    this.animation = animationName;
+    this.currentFrame = 1;
+    this.frames = spriteSheets[this.spriteName][this.animation]["frames"];
     this.sx = spriteSheets[this.spriteName][this.animation]["sx"];
     this.sy = spriteSheets[this.spriteName][this.animation]["sy"];
     this.sw = spriteSheets[this.spriteName][this.animation]["sWidth"];

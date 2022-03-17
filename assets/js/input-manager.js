@@ -4,10 +4,11 @@ var listener = new window.keypress.Listener();
 listener.register_combo({
   "keys": "a",
   "on_keydown": () => {
+
     pressedKeys.push(KEY.A);
   },
   "on_keyup": () => {
-    player.setupSprite('idleL');
+
     pressedKeys.indexOf(KEY.A) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.A), 1) : null;
   },
   prevent_repeat: true
@@ -16,10 +17,11 @@ listener.register_combo({
 listener.register_combo({
   "keys": "left",
   "on_keydown": () => {
+
     pressedKeys.push(KEY.LEFT);
   },
   "on_keyup": () => {
-    player.setupSprite('idleL');
+
     pressedKeys.indexOf(KEY.LEFT) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.LEFT), 1) : null;
   },
   prevent_repeat: true
@@ -63,19 +65,19 @@ listener.register_combo({
     pressedKeys.push(KEY.D);
   },
   "on_keyup": () => {
-    player.setupSprite('idleR');
+
     pressedKeys.indexOf(KEY.D) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.D), 1) : null;
   },
   prevent_repeat: true
 });
 
 listener.register_combo({
-  "keys": "right", 
+  "keys": "right",
   "on_keydown": () => {
     pressedKeys.push(KEY.RIGHT);
   },
   "on_keyup": () => {
-    player.setupSprite('idleR');
+
     pressedKeys.indexOf(KEY.RIGHT) > -1 ? pressedKeys.splice(pressedKeys.indexOf(KEY.RIGHT), 1) : null;
   },
   prevent_repeat: true
