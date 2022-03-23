@@ -15,6 +15,11 @@ class Vec2 {
     this.x += vector.x;
     this.y += vector.y;
   }
+
+  Subtract(vector) {
+    this.x -= vector.x;
+    this.y -= vector.y;
+  }
 }
 
 
@@ -65,7 +70,7 @@ const Config = {
   GRAVITY: .5,
   MAX_VELOCITY: new Vec2(10, 20),
   MIN_VELOCITY: .001,
-  DEBUG: true,
+  DEBUG: false,
   DEF_ANIMATION_SPEED: 10,
   MAX_FPS: 60,
   RATIO_W: 1920,
@@ -198,6 +203,13 @@ window.addEventListener('DOMContentLoaded', function () { console.log("DOM loade
 $(window).focus(function () { MainLoop.start(); });
 $(window).blur(function () { MainLoop.stop(); });
 
+canvas.addEventListener("mousedown", function (e) {
+  getMousePosition(canvas, true, e);
+});
+
+canvas.addEventListener("mouseup", function (e) {
+  getMousePosition(canvas, false, e);
+});
 
 // * UTILITY FUNCTIONS ------------------------------------------------
 const noop = () => { /* No operation function */ }
@@ -210,17 +222,30 @@ const updateClipboard = (newClip) => {
   });
 }
 
-const returnMoveValues = (entity) => {
-  return {
-    x: entity.moveValues.x,
-    y: entity.moveValues.y,
-    amount: entity.moveValues.amount,
+function getMousePosition(canvas, start, event) {
+  return;
 
-    totMovX: entity.moveValues.x * entity.moveValues.amount,
-    totMovY: entity.moveValues.y * entity.moveValues.amount,
+  // TODO: Get editor working correctly :)
 
-    newx: entity.posx + (entity.moveValues.x * entity.moveValues.amount),
-    newy: entity.posy + (entity.moveValues.y * entity.moveValues.amount)
+  // let rect = canvas.getBoundingClientRect();
+  // let x = event.clientX - rect.left;
+  // let y = event.clientY - rect.top;
+
+  const x = (event.clientX * canvas.width / canvas.clientWidth) - scrollTotal.x;
+  const y = (event.clientY * canvas.height / canvas.clientHeight) - scrollTotal.y;
+  console.log(new Vec2(x, y));
+
+  const tempObj = new SolidRect(new Vec2(x + scrollTotal, y + scrollTotal), new Vec2(1, 1), 'red', [true, false]);
+
+  let obj1;
+  for (let j = 0; j < this.gameObjects.length; j++) {
+    obj1 = this.gameObjects[j];
+    if (
+      obj1 == tempObj ||
+      obj1.type == GameObjectType.BACKGROUND ||
+      obj1.type == GameObjectType.PLAYER
+    ) continue;
+    obj1.collideRectangle(tempObj);
   }
 }
 

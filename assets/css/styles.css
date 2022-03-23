@@ -39,13 +39,13 @@ body {
 	background-image: url("https://github.com/Ian-Boraks/2022TSA-VidGame/blob/main/assets/img/background1.jpg?raw=true");
 	background-position: bottom -100px right 0;
 	background-repeat: repeat-x;
-	margin: 0;
+	/* margin: 0;
 	position: absolute;
 	top: 50%;
 	left: 50%;
 	-ms-transform: translate(-50%, -50%);
 	transform: translate(-50%, -50%);
-}
+} */
 
 #game-window h1 {
 	color: white;

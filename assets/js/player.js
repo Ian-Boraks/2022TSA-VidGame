@@ -28,7 +28,7 @@ class Player extends GameObject {
     scrollTotal = new Vec2(0, 0);
   }
 
-  update() {
+  autoAnimationSwitch() {
     switch (this.animation) {
       case 'walkL':
         if (this.vel.y > Config.GRAVITY * 2 || this.vel.y < -Config.GRAVITY * 2) {
@@ -64,6 +64,10 @@ class Player extends GameObject {
         ) this.switchAnimation('jump' + ((this.animation.includes('R') || this.vel.x > 0) ? 'R' : 'L'));
         break;
     }
+  }
+
+  update() {
+    this.autoAnimationSwitch();
     super.update();
   }
 
